@@ -19,8 +19,15 @@ https://docs.microsoft.com/en-us/powershell/module/azuread/get-azureadgroupmembe
 # Connect to Azure AD
 Connect-AzureAD
 
-$enterpriseAppName = "MetaCompliance User Provisioning"
-$onPremiseADgroup = "All_Staff"
+#Hardcode Enterprise Application name and on-premise AD group name
+
+# $enterpriseAppName = "MetaCompliance User Provisioning"
+# $onPremiseADgroup = "All_Staff"
+
+# Prompt input for Enterprise Application name and on-premise AD group name
+
+ $enterpriseAppName = Read-Host "Please type the Enterprise Application Name:"
+ $onPremiseADgroup = Read-Host "Please type the On-Premise AD Group Name:"
 
 # Get the service principal for the Enterprise Application you want to assign the user to
 $servicePrincipal = Get-AzureADServicePrincipal -Filter "Displayname eq '$enterpriseAppName'"
@@ -29,17 +36,19 @@ $servicePrincipal = Get-AzureADServicePrincipal -Filter "Displayname eq '$enterp
 ## Use this cmdlet to list the specific role $servicePrincipal.Approles[0].id
 
 # Get all users that are already assigned to the application
-$existingUsers = Get-AzureADServiceAppRoleAssignment -all $true -ObjectId $servicePrincipal.Objectid | select -ExpandProperty PrincipalId
+$existingUsers = Get-AzureADServiceAppRoleAssignment -all $true -ObjectId $servicePrincipal.Objectid | Select-Object -ExpandProperty PrincipalId
 
 # Get all users from on-prem AD group
-$allUsers = Get-AzureADGroup -Filter "DisplayName eq '$onPremiseADgroup'" -All $true | Get-AzureADGroupMember -All $true | Select displayname,objectid
+$allUsers = Get-AzureADGroup -Filter "DisplayName eq '$onPremiseADgroup'" -All $true | Get-AzureADGroupMember -All $true | Select-Object displayname,objectid
 
 # Compare list of users from the on-premise AD group and list of users already assigned default permissions to the Enterprise Application
 $newUsers = $allUsers | Where-Object { $_.ObjectId -notin $existingUsers }
 
 ForEach ($user in $newUsers) {
   Try {
-    ## Note that the Id parameter specifies app because this application has two defined roles
+    ## Note that the Id parameter specifies app because this application has two defined roles 
+    # If multiple roles does not exist then use: -Id ([Guid]::Empty) instead of -Id $servicePrincipal.Approles[0].id
+    # Use this cmdlet to display the available roles: Get-AzureadApplication -SearchString $enterpriseAppName | select Approles | Fl
     New-AzureADUserAppRoleAssignment -ObjectId $user.ObjectId -PrincipalId $user.ObjectId -ResourceId $servicePrincipal.ObjectId -Id $servicePrincipal.Approles[0].id -ErrorAction Stop
     [PSCustomObject]@{
         UserPrincipalName = $user.displayname
@@ -53,4 +62,3 @@ ForEach ($user in $newUsers) {
     }
   }
 }
-
