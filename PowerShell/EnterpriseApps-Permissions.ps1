@@ -16,6 +16,9 @@ https://docs.microsoft.com/en-us/powershell/module/azuread/get-azureadgroupmembe
 
 #>
 
+# Import AzureAD module with -UseWindowsPowerShell switch for PowerShell 7
+# Import-Module AzureAD -UseWindowsPowerShell
+
 # Connect to Azure AD
 Connect-AzureAD
 
@@ -26,8 +29,8 @@ Connect-AzureAD
 
 # Prompt input for Enterprise Application name and on-premise AD group name
 
- $enterpriseAppName = Read-Host "Please type the Enterprise Application Name:"
- $onPremiseADgroup = Read-Host "Please type the On-Premise AD Group Name:"
+ $enterpriseAppName = Read-Host "Please type the Enterprise Application Name"
+ $onPremiseADgroup = Read-Host "Please type the On-Premise AD Group Name"
 
 # Get the service principal for the Enterprise Application you want to assign the user to
 $servicePrincipal = Get-AzureADServicePrincipal -Filter "Displayname eq '$enterpriseAppName'"
@@ -43,6 +46,11 @@ $allUsers = Get-AzureADGroup -Filter "DisplayName eq '$onPremiseADgroup'" -All $
 
 # Compare list of users from the on-premise AD group and list of users already assigned default permissions to the Enterprise Application
 $newUsers = $allUsers | Where-Object { $_.ObjectId -notin $existingUsers }
+
+# Check to see if there are any new users to add and if there isn't, terminate the script now rather than attempting the loop
+if ($newUsers.count -eq 0) {
+  Exit
+}
 
 ForEach ($user in $newUsers) {
   Try {
