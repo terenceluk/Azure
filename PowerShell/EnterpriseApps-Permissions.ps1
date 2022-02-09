@@ -46,7 +46,7 @@ $existingUsers = Get-AzureADServiceAppRoleAssignment -all $true -ObjectId $servi
 
 <# 
 Note that this example assumes we are connecting to Azure AD interactively as a user with modern authentication. If you are using a Service Principal to authenticate, replace
-the above Get-AzureADServiceAppRoleAssignment with "Get-AzureADServiceAppRoleAssignedTo"
+the above "Get-AzureADServiceAppRoleAssignment" with "Get-AzureADServiceAppRoleAssignedTo"
 For more information as to why, see my post here: http://terenceluk.blogspot.com/2022/02/attempting-to-use-get.html
 #>
 
