@@ -7,7 +7,7 @@ Import-Module AzureAD -UseWindowsPowerShell
 Connect-AzureAD
 
 # Define variables that will be used to create the certificate and export it
-$pwd = "YourPassword123$" # certificate password
+$password = "YourPassword123$" # certificate password
 $certDNSname = "EnterpriseApps.contoso.com" # the CN (common name) of the certificate
 $certificateLifeInYears = 3
 $certificateExportPath = "c:\temp\"
@@ -23,13 +23,13 @@ $thumb = (New-SelfSignedCertificate -CertStoreLocation cert:\localmachine\my -Dn
 ### Certificate is now created in the computer's local store
 
 # ^^^ Convert the password to a secure string and export the newly created certificate on the computer's Computer Store to a PFX file
-$pwd = ConvertTo-SecureString -String $pwd -Force -AsPlainText
-Export-PfxCertificate -cert "cert:\localmachine\my\$thumb" -FilePath $certificatePathandName -Password $pwd
+$password = ConvertTo-SecureString -String $password -Force -AsPlainText
+Export-PfxCertificate -cert "cert:\localmachine\my\$thumb" -FilePath $certificatePathandName -Password $password
 
 ### ^^^ Certificate now exported to the local computer
 
 # Load the certificate into variables
-$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate($certificatePathandName, $pwd)
+$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate($certificatePathandName, $password)
 $keyValue = [System.Convert]::ToBase64String($cert.GetRawCertData())
 
 # Create the Azure Active Directory Application (Azure Active Directory > App Registrations) and upload certificate during creation
