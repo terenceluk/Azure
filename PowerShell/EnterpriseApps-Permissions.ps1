@@ -39,7 +39,16 @@ $servicePrincipal = Get-AzureADServicePrincipal -Filter "Displayname eq '$enterp
 ## Use this cmdlet to list the specific role $servicePrincipal.Approles[0].id
 
 # Get all users that are already assigned to the application
+$existingUsers = Get-AzureADServiceAppRoleAssignedTo -all $true -ObjectId $servicePrincipal.Objectid | Select-Object -ExpandProperty PrincipalId
+
+# Get all users that are already assigned to the application
 $existingUsers = Get-AzureADServiceAppRoleAssignment -all $true -ObjectId $servicePrincipal.Objectid | Select-Object -ExpandProperty PrincipalId
+
+<# 
+Note that this example assumes we are connecting to Azure AD interactively as a user with modern authentication. If you are using a Service Principal to authenticate, replace
+the above Get-AzureADServiceAppRoleAssignment with "Get-AzureADServiceAppRoleAssignedTo"
+For more information as to why, see my post here: http://terenceluk.blogspot.com/2022/02/attempting-to-use-get.html
+#>
 
 # Get all users from on-prem AD group
 $allUsers = Get-AzureADGroup -Filter "DisplayName eq '$onPremiseADgroup'" -All $true | Get-AzureADGroupMember -All $true | Select-Object displayname,objectid
