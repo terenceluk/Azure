@@ -87,6 +87,7 @@ $servicePrincipals = Get-AzADServicePrincipal
 $appWithCredentials = @()
 
 # Populate the array with app registrations that have credentials
+Write-output 'Retrieving app registrations that have credentials...'
 
 # Retrieve the list of applications and sort them by DisplayName
 $appWithCredentials += $applications | Sort-Object -Property DisplayName | % {
@@ -170,3 +171,4 @@ $json = @"
 
 # Submit the data to the API endpoint
 Post-LogAnalyticsData -customerId $customerId -sharedKey $sharedKey -body ([System.Text.Encoding]::UTF8.GetBytes($appWithCredentialsJSON)) -logType $logType  
+Write-output 'Completed'
