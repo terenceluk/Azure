@@ -24,6 +24,7 @@ $EventLogNames      += 'Microsoft-Windows-TerminalServices-LocalSessionManager/O
 $EventLogNames      += 'Microsoft-FSLogix-Apps/Operational'
 $EventLogNames      += 'Microsoft-Windows-TerminalServices-RemoteConnectionManager/Admin'
 $EventLogNames      += 'Microsoft-FSLogix-Apps/Admin'
+$EventLogNames      += 'Microsoft-Windows-GroupPolicy/Operational'
 
 # Use the array of event log paths created above to create each Windows Event Log, then add a logical name Windows-event- with an incrementing number
 
