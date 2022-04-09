@@ -1,0 +1,6 @@
+// This query will retrieve all failed signin events for Azure AD and parse the LocationDetails field
+
+SigninLogs
+| where Status.errorCode != 0
+| extend City=LocationDetails.city, State=LocationDetails.state, Country=LocationDetails.countryOrRegion, Error_Code=Status.errorCode, Failure_Reason=Status.failureReason
+| project TimeGenerated, UserDisplayName, AppDisplayName, IPAddress, City, State, Country, AuthenticationRequirement, Failure_Reason, ConditionalAccessStatus, ConditionalAccessPolicies, Error_Code
