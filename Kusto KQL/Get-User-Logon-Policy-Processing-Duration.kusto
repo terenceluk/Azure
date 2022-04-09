@@ -1,0 +1,8 @@
+// This query will retrieve the amount of time required for computer logon policy processing to complete by parsing ParameterXML
+// The logon details can also be retrieved from EventData but we're using ParameterXml instead to demonstrate how to parse it
+Event
+| where EventLog == "Microsoft-Windows-GroupPolicy/Operational"
+| where Computer contains "Server-or-Desktop-Name"
+| where EventID == "8001"
+| parse ParameterXml with * "<Param>" GPO_Processing_Seconds "</Param><Param>" Digit1 "</Param><Param>" Server_or_Computer "</Param><Param>" Digit2 "</Param><Param>" Boolean
+| project TimeGenerated, Server_or_Computer, GPO_Processing_Seconds, RenderedDescription
