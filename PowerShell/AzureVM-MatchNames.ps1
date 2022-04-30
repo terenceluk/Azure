@@ -1,3 +1,5 @@
+# Connect-AzAccount
+
 foreach ( $azVM in Get-AzVM ) {
 
     $networkProfile = $azVm.NetworkProfile.NetworkInterfaces.id.Split("/")|Select -Last 1
