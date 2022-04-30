@@ -1,0 +1,51 @@
+// Find Top Processes utilizing CPU
+// defining our cpu threshold
+let CPUThreshold = 90;
+// define time sample rate
+let Time = 10m;
+// define Count of Processes to return
+let ProcessCount = 5;
+// Find instances of total cpu being used above 90% over the last 10 mins
+let TopCPU = Perf
+| where TimeGenerated > now(-10m)
+and ObjectName == "Processor"
+and CounterName == "% Processor Time"
+and InstanceName == "_Total"
+and CounterValue > 90
+| project Computer, ObjectName
+, CounterName, CounterValue
+, TimeGenerated;
+// end query
+// find Process count for device(s)
+let TopProcess = Perf
+| where TimeGenerated > now(-10m)
+and ObjectName == "Processor"
+and CounterName == "% Processor Time"
+and InstanceName == "_Total"
+and CounterValue > 90
+| project Computer, ObjectName
+, CounterName, CounterValue
+, TimeGenerated;
+// end query
+// find cpu count for devices
+let FindCPU = Perf
+| where TimeGenerated >= ago(1h)
+| where ObjectName == "Processor"
+and CounterName == "% Processor Time"
+and InstanceName != "_Total"
+| sort by InstanceName asc nulls first
+| summarize CPUCount = dcount(InstanceName) by Computer;
+// end query
+// Join all datasets together
+FindCPU | join(TopCPU) on Computer
+| join(TopProcess)on Computer
+| extend PercentProcessorUsed = CounterValue1 / CPUCount
+| where ObjectName1=="Process"
+| summarize avg(PercentProcessorUsed) by Computer, ObjectName
+, CounterName, CPUCount
+, TotalCPU=CounterValue // rename countervalue to totalcpu
+, Process=ObjectName1 // rename objectname1 to process
+, ProcessTime=CounterName1 //rename countername1 to processtime
+, TimeGenerated
+| where avg_PercentProcessorUsed > 25 // only return processes that are using more than 25%
+| top ProcessCount by avg_PercentProcessorUsed desc
