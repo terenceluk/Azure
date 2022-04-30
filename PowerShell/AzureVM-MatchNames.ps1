@@ -1,3 +1,4 @@
+# http://terenceluk.blogspot.com/2020/04/powershell-script-to-match-azure.html
 # Connect-AzAccount
 
 foreach ( $azVM in Get-AzVM ) {
