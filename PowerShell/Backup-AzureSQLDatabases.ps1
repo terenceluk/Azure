@@ -2,25 +2,6 @@
 This PowerShell script will use the updated spreadsheet exported by the PowerShell Script Export-All-Subscriptions-AzureSQLDatabases-To-Excel.ps1 
 to backup all the databases. Note that the reason why the spreadsheet is updated is because an additional Username and Password columns are added
 to the spreadsheet so the appropriate credentials can be used to access the database.
-
-Dev Subscription
-Name: WFL_Dev_Smart Cookies
-ID: aee5068e-f197-46d9-a122-4f11b6f17e80
-Set-AzContext -Subscription "aee5068e-f197-46d9-a122-4f11b6f17e80"
-
-Prod Subscription
-Name: WFL_Prod_Smart Cookies
-ID: d004ef8b-cda2-4d33-a3b8-e94fbffa88a5
-Set-AzContext -Subscription "d004ef8b-cda2-4d33-a3b8-e94fbffa88a5"
-
-$mySQLserverAdmin = "InfraAdmin"
-$mySQLserverPassword = "WestonSnap2!""
-
-Storage Account Name: wfazuresqldatabasebkp
-Key: 5IbjBbAy3o17p0P5idjF9O+w63jODRA0voh5e3ZFyIBcV6j8LwiBK3QM2GPapenP15TY8wyv8tK++AStw/D9IQ==
-Connection String: DefaultEndpointsProtocol=https;AccountName=wfazuresqldatabasebkp;AccountKey=5IbjBbAy3o17p0P5idjF9O+w63jODRA0voh5e3ZFyIBcV6j8LwiBK3QM2GPapenP15TY8wyv8tK++AStw/D9IQ==;EndpointSuffix=core.windows.net
-Blob service: https://wfazuresqldatabasebkp.blob.core.windows.net/
-
 #>
 
 # Install Excel Module
