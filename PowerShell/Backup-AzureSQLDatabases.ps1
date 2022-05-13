@@ -12,7 +12,7 @@ Install-Module -Name Az -Scope CurrentUser -Repository PSGallery -Force
 Connect-AzAccount
 
 # Set subscription context
-$subscriptionId = "aee5068e-f197-46d9-a122-4f11b6f17e80"
+$subscriptionID = "xxxx-xxxx-xxxx"
 Set-AzContext -Subscription $subscriptionId
 
 # Configure variables required for the storage account where the backups of the Azure SQL Database export will be placed
