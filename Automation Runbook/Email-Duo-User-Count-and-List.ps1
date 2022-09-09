@@ -23,9 +23,19 @@ $duoDirectorID = Get-AutomationVariable -Name MyDuoDirectoryID
 # Store the Azure Key Vault name that contains our SendGrid API key in a variable
 $VaultName = "kv-Production" # Azure Key Vault Name
 
-# Define the address for report to send to, the from address, and the email subject
-$destEmailAddress = "tluk@contoso.com" # From address
-$fromEmailAddress = "duoreport@contoso.com" # To address
+# Define the email addresses that the report will send to
+$destEmailAddress = "o365license@contoso.com","anotheruser@xyz.com" # From address
+
+# Handle multiple email address destinations by formatting the email addresses received for what SendGrid expects
+$formattedToEmails = [System.Collections.Generic.list[object]]::new()
+foreach ($recipient in $destEmailAddress) {
+    $formattedToEmails.Add(@{
+		email = $recipient
+	})
+}
+
+# Define the send from address and the email subject
+$fromEmailAddress = "duoreport@ccs.bm" # To address
 $subject = "Duo User Report" # Email Subject
 
 # Get Duo information with Duo-PSModule https://github.com/mbegan/Duo-PSModule
@@ -50,7 +60,7 @@ table tbody tr:nth-child(odd) {background-color: #ffffff;}
 </head>
 <title>Duo Usage Report</title>
 <h1>Duo Usage Report</h1>
-<h2>Client: Contoso Limited</h2>
+<h2>Client: Bernina Re Limited</h2>
 <h3>The current Duo user count for this tenant is: $userCount <h3>
 $htmlUsers
 </html>
@@ -80,12 +90,8 @@ $headers.Add("Content-Type", "application/json")
 $body = @{
 personalizations = @(
     @{
-        to = @(
-                @{
-                    email = $destEmailAddress
-                }
-        )
-    }
+        to = $formattedToEmails
+     }
 )
 from = @{
     email = $fromEmailAddress
