@@ -1,4 +1,4 @@
-﻿#using the httputility from system.web
+#using the httputility from system.web
 [System.Reflection.Assembly]::LoadWithPartialName("System.Web") | out-null
                   
 $ExecutionContext.SessionState.Module.OnRemove = {
@@ -1403,6 +1403,56 @@ function duoCreateActivationCode()
 
     return $request
 }
+
+# New duplicate of duoCreateActivationCode() that uses /send_sms_activation to send SMS mobile activation
+function duoSendSMSActivation()
+{
+    param
+    (
+        [parameter(Mandatory=$false)]
+            [ValidateLength(1,100)]
+            [String]$dOrg=$DuoDefaultOrg,
+        [parameter(Mandatory=$true)]
+            [ValidateLength(20,20)]
+            [alias('pid','phoneid')]
+            [String]$phone_id,
+        [parameter(Mandatory=$false)]
+            [ValidateRange(1,604800)]
+            [int]$valid_secs=3600,
+        [parameter(Mandatory=$false)]
+            [switch]$install
+    )
+
+    [string[]]$param = "valid_secs","install"
+
+    $parameters = New-Object System.Collections.Hashtable
+
+    foreach ($p in $param)
+    {
+        if (Get-Variable -Name $p -ErrorAction SilentlyContinue) 
+        {
+            if ((Get-Variable -Name $p -ValueOnly) -ne "")
+            {
+                $parameters.Add($p,(Get-Variable -Name $p -ValueOnly))
+            }
+        }
+    }
+
+    [string]$method = "POST"
+    [string]$path = "/admin/v1/phones/" + $phone_id + "/send_sms_activation"
+
+    try
+    {
+        $request = _duoBuildCall -method $method -dOrg $dOrg -path $path -parameters $parameters
+    }
+    catch
+    {
+        throw $_
+    }
+
+    return $request
+}
+
 
 function duoSendSMSCodes()
 {
