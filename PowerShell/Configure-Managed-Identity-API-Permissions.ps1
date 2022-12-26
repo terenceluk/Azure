@@ -1,3 +1,9 @@
+<# 
+The purpose of this script is to configure a Managed Identity with Graph API permissions
+
+Refer to my blog post for more information and sample purpose: http://terenceluk.blogspot.com/2022/12/updated-create-automated-report-for.html
+#>
+
 $TenantID="xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx"
 $GraphAppId = "00000003-0000-0000-c000-000000000000"
 $DisplayNameOfMSI="O365-License-HTML-Reporting"
