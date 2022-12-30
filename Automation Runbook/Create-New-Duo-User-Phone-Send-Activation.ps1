@@ -44,6 +44,10 @@ if ($WebHookData){
         $username = $bodyData.samAccountName | out-string
         $mobile = $bodyData.mobile | out-string
 
+        # Clean up mobile number by removing the "-" and trimming beginning and ending whitespace
+        $mobile = $mobile -replace '-','' # remove the "-"
+        $mobile.Trim() # remove starting and ending whitespace
+
         # Define platform type as a generic smartphone
         $platformType = "generic smartphone" # Set Platform Type for creating new phone
 
@@ -68,6 +72,10 @@ if ($WebHookData){
     # Retrieve PS Object items and convert to string to store in variable
     $username = $bodyData.samAccountName | out-string
     $mobile = $bodyData.mobile | out-string
+
+    # Clean up mobile number by removing the "-" and trimming beginning and ending whitespace
+    $mobile = $mobile -replace '-','' # remove the "-"
+    $mobile.Trim() # remove starting and ending whitespace
 
     # Define platform type as a generic smartphone
     $platformType = "generic smartphone" # Set Platform Type for creating new phone
