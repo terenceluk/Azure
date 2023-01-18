@@ -61,7 +61,7 @@ if ($WebHookData){
         duoAssocUserToPhone -user_id $newUser.user_id -phone_id $newPhone.phone_id
 
         # Send Duo SMS activation to phone via number
-        duoCreateActivationCode -phone_id $newPhone.phone_id
+        duoSendSMSActivation -phone_id $newPhone.phone_id
 
         Return
     }
@@ -90,7 +90,7 @@ if ($WebHookData){
     duoAssocUserToPhone -user_id $newUser.user_id -phone_id $newPhone.phone_id
 
     # Send Duo SMS activation to phone via number
-    duoCreateActivationCode -phone_id $newPhone.phone_id
+    duoSendSMSActivation -phone_id $newPhone.phone_id
 }
 else {
     Write-Output 'No data received'
