@@ -3,7 +3,7 @@
 
 # Grant required roles
 # Add-RoleGroupMember -Identity "Discovery Management" -Member admin@contoso.onmicrosoft.com
-#Add-eDiscoveryCaseAdmin admin@contoso.onmicrosoft.com
+# Add-eDiscoveryCaseAdmin admin@contoso.onmicrosoft.com
 
 $searchName = "Delete_Sensitive"
 $searchNamePurge = "$searchName" + "_Purge"
