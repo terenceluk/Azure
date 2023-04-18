@@ -9,7 +9,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 import openpyxl
 
 # Set the path to the Excel file containing the virtual machines to be configured
-excel_file_path = 'C:/Users/tluk/Documents/Scripts/Python/Web Browser Automation/VMs.xlsx'
+excel_file_path = 'C:/Users/tluk/OneDrive - CCS Group/Documents/Scripts/Python/Web Browser Automation/VMs-Extended.xlsx'
 
 # Use openpyxl to open the Excel file and select the active worksheet
 workbook = openpyxl.load_workbook(excel_file_path)
@@ -152,20 +152,26 @@ for row in worksheet.iter_rows(min_row=2):
     # Do not click on the VM heading if it is not expanded (the top xpath doesn't exist)
     except:
         pass
-
+    
     # Increment the current row by 1 now that the current row has been processed
     current_row += 1
     
     # Check to see if we are at the end of the worksheet by comparing current row and the count of the rows
     if current_row < row_count:
         # If there are still VMs to be added then...
-        # Click on the "Add Virtual Machines" button
-        add_vm_button = driver.find_element(By.XPATH, '//button[@title="Virtual Machines"]')
-        # Find the button and scroll back up in the browser
+        # Locate the product search field at the top of the page
+        search_field = driver.find_element(By.XPATH, '//input[@class="product-search" and @aria-label="Search products" and @placeholder="Search products"]') 
+        # Use the search field xpath and scroll back up in the browser
         actions = ActionChains(driver)
-        actions.move_to_element(add_vm_button).perform()
+        actions.move_to_element(search_field).perform()
+        # Clear the search field (there would be an entry if we are on the 3rd VM)
+        search_field.clear()
+        # Search for virtual machines to eliminate //button[@title="Virtual Machines"] xpath showing up twice
+        search_field.send_keys("Virtual machines")
+        # Locate the button to add virtual machine
+        add_vm_button = driver.find_element(By.XPATH, '//button[@title="Virtual Machines"]') 
         # Click on the "Add Virtual Machines" button to add a new one
         add_vm_button.click()
-
+       
 # Close the webdriver
 # driver.quit()
