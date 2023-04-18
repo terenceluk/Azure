@@ -8,8 +8,14 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 import openpyxl
 
+# Set constants for this script
+EXCEL_FILE_PATH_HERE = 'C:/Users/tluk/Documents/Scripts/Python/Web Browser Automation/VMs-Extended.xlsx'
+WHERE_SELENIUM_CHROME_DRIVE_IS_LOCATED = 'C:/SeleniumDrivers'
+URL_TO_AZURE_CALCULATOR = 'https://azure.microsoft.com/en-ca/pricing/calculator/'
+AZURE_CALCULATOR_ESTIMATE_NAME = "Terence's New Estimate"
+
 # Set the path to the Excel file containing the virtual machines to be configured
-excel_file_path = 'C:/Users/tluk/OneDrive - CCS Group/Documents/Scripts/Python/Web Browser Automation/VMs-Extended.xlsx'
+excel_file_path = EXCEL_FILE_PATH_HERE
 
 # Use openpyxl to open the Excel file and select the active worksheet
 workbook = openpyxl.load_workbook(excel_file_path)
@@ -20,7 +26,7 @@ row_count = worksheet.max_row
 current_row = 1
 
 # Start the Chrome webdriver (where chromedriver.exe is accessed)
-os.environ['PATH'] += 'C:/SeleniumDrivers'
+os.environ['PATH'] += WHERE_SELENIUM_CHROME_DRIVE_IS_LOCATED
 
 # Use options with detach to stop the driver from closing the browser so the estimate can be saved
 chrome_options = Options()
@@ -28,7 +34,7 @@ chrome_options.add_experimental_option("detach", True)
 driver = webdriver.Chrome(options=chrome_options)
 
 # Launch Google Chrome and navigate to the Azure calculator website
-driver.get('https://azure.microsoft.com/en-ca/pricing/calculator/')
+driver.get(URL_TO_AZURE_CALCULATOR)
 
 # Maximize the Google Chrome window
 driver.maximize_window()
@@ -56,7 +62,7 @@ add_vm_button = driver.find_element(By.XPATH, '//button[@title="Virtual Machines
 add_vm_button.click()
 
 # Name Estimate
-estimate_name = "My New Estimate" # Update this estimate as desired
+estimate_name = AZURE_CALCULATOR_ESTIMATE_NAME
 estimate_name_field = driver.find_element(By.XPATH, '//input[@id="estimate-name"]')
 estimate_name_field.clear()
 estimate_name_field.send_keys(estimate_name)
@@ -172,6 +178,7 @@ for row in worksheet.iter_rows(min_row=2):
         add_vm_button = driver.find_element(By.XPATH, '//button[@title="Virtual Machines"]') 
         # Click on the "Add Virtual Machines" button to add a new one
         add_vm_button.click()
-       
+
+# The commented out lines below are used to prevent Chrome Driver from closing the browser
 # Close the webdriver
 # driver.quit()
