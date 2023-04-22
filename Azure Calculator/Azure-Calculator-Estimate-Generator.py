@@ -1,3 +1,8 @@
+'''
+This python script will generate an estimate on the Azure Calculator with a list of virtual machines in an Excel spreadsheet. 
+Please refer to my blog post for more information: http://terenceluk.blogspot.com/2023/04/automating-creation-of-azure-calculator.html
+'''
+
 import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
