@@ -115,7 +115,8 @@ for row in worksheet.iter_rows(min_row=2):
 
     # Enter the quantity (amount of these VMs)
     quantity_input = driver.find_element(By.XPATH, '//input[@name="count"]')
-    quantity_input.clear()
+    # quantity_input.clear() will not clear the default value of 1 so we need to use ' \b' to hit backspace and change 1 to 0, then enter quantity
+    quantity_input.send_keys(' \b')
     quantity_input.send_keys(quantity)
 
     # Select Compute Billing Options
