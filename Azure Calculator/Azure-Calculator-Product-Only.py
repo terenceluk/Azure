@@ -2,7 +2,7 @@
 This python script will generate an estimate on the Azure Calculator with a list of resources in an Excel spreadsheet but will only
 handle certain resources, while explicitly ignoring a few items that are not available on Azure.
 
-I will be writing a blog post then update this post at a later time.
+Please refer to my blog post for more information: http://terenceluk.blogspot.com/2023/06/automating-creation-of-azure-calculator.html
 '''
 
 import os
