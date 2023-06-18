@@ -68,7 +68,7 @@ AzureDiagnostics
 | where ResourceType == "AZUREFIREWALLS" 
 and Action_s == allowOrdeny
 and SourceIP startswith sourceSubnet
-and DestinationIp_s == ""
+// and DestinationIp_s == ""
 // and DestinationIp_s  == "99.230.250.247" <-- Include this for destination
 // Convert UTC to EST and store in variable
 | extend TimeGeneratedEST = datetime_utc_to_local(TimeGenerated, timezone)
