@@ -1,7 +1,9 @@
 <# 
-Creates and returns Onetimesecret URL with a secret that can only be viewed once
+The purpose of this script is to create and return a Onetimesecret URL with a secret that can only be viewed once.
 
-https://onetimesecret.com/docs/api
+Refer to my blog post for more information: http://terenceluk.blogspot.com/2023/06/powershell-script-that-will-use.html
+
+API Documentation: https://onetimesecret.com/docs/api
 #>
 
 param(
