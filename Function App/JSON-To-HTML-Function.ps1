@@ -54,11 +54,18 @@ $blobPathToJSON = $Request.Body.path
 # Extract Json file name from path
 $blobName = $blobPathToJSON.Substring($blobPathToJSON.LastIndexOf("/") + 1)
 
+# Extract Storage Account Name from path
+$blobStorageName = $blobPathToJSON.Substring($blobPathToJSON.IndexOf("//") + 2, $blobPathToJSON.IndexOf(".blob") - 8)
+
+# Extract container name from path with RegEx matching
+$regexPattern = '(?<=blob.core.windows.net\/)([\s\S]*)(?=\/)'
+$blobContainerName = [regex]::Match($blobPathToJSON, $regexPattern)
+
 # Set container name in storage account that contains the JSON
-$container = "integration"
+$container = $blobContainerName.value
 
 # Create Storage Context
-$blobContext = New-AzStorageContext -StorageAccountName "rgcacinfratemp" 
+$blobContext = New-AzStorageContext -StorageAccountName $blobStorageName
 
 # Retrieve JSON blob
 $jsonBlob = Get-AzStorageBlob -Blob $blobName -Container $container -Context $blobContext
