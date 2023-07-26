@@ -1,0 +1,19 @@
+// This KQL query combines the log entries in the tables AZFWApplicationRule, AZFWNetworkRule, AZFWDnsQuery 
+// when configuring the Diagnostics Settings for Azure Firewall to "Resource Specific", which breaks up
+// the tables into separate items. The purpose of this query is to mimic the AzureDiagnostics table structure
+// when the Diagnostic Settings are configured "Azure Diagnostics"
+
+let ApplicationRulesLog = view() {
+AZFWApplicationRule
+| extend Type = "AZWApplicationRule"
+};
+let NetworkRulesLog = view() {
+AZFWNetworkRule
+| extend Type = "AZNetworkRule"
+};
+let DNSQueryLog = view () {
+AZFWDnsQuery
+| extend Type = "AZWDNSQuery"
+};
+union ApplicationRulesLog,NetworkRulesLog,DNSQueryLog
+| sort by TimeGenerated desc
