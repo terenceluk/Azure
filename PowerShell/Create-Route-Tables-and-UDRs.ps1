@@ -31,7 +31,7 @@ foreach ($route in $routeData) {
 ##### Add UDRs to Route Table from Excel #####
 
 ## With the Route Tables created, proceed to create UDRs in there
-## This is broken in case we want to test creating the tables first rather than placing UDRs into a sub loop and immediately adding the UDRs to the tables
+## This is broken into another section in case we want to test creating the tables first rather than placing UDRs into a sub loop and immediately adding the UDRs to the tables
 ## We can run the above code first, confirm Route Tables creation, then run the code below to create UDRs
 
 # Read the UDRs in Excel spreadsheet
