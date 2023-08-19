@@ -29,7 +29,7 @@ $fixedJson = [regex]::Replace($badJson, $regexPattern, { param($match) "[{0}]" -
 $badJson = $fixedJson
 
 # Define the regex pattern that will match the log entries not separated with commas
-$regexPattern = '(?="category": )([\s\S]*?}]\s}\W)'
+$regexPattern = '(?="category": )([\s\S]*?}[\s\S]*?][\s\S]*?}\W)'
 
 # Add the missing comma into each log entry
 $fixedJson = [regex]::Replace($badJson, $regexPattern, { param($match) "{0}," -f $match.Value })
