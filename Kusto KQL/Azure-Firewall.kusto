@@ -1,7 +1,7 @@
 // Sample KQL queries for troubleshooting network traffic flow traversing through the firewall. Note that these queries are for Azure Firewall diagnostics settings sent to "Azure diagnostics" for the "Destination table" configuration of the "Log Analytics Workspace". 
 // These will not work if "Resource specific" is configured for the "Destination table" because Application and Network rule entires are logged in separate tables
 
-// Query to retrive all traffic processed by the firewall Network Rules over the past 24 hours in EST
+// Query to retrieve all traffic processed by the firewall Network Rules over the past 24 hours in EST
 let daysAgo = ago(1d);
 // list of timezones: https://learn.microsoft.com/en-us/azure/data-explorer/kusto/query/timezone
 let timezone = "Canada/Eastern";
@@ -13,7 +13,7 @@ AzureDiagnostics
 | project TimeGeneratedEST = datetime_utc_to_local(TimeGenerated, timezone), Category, Resource, OperationName, DestinationIp_s, msg_s, Protocol_s, SourceIP, SourcePort_d, DestinationPort_d, Action_s, Policy_s, RuleCollectionGroup_s, RuleCollection_s, Rule_s, ActionReason_s, Fqdn_s, TargetUrl_s // This project line is for both "NetworkRule" and "ApplicationRule" category
 // | project TimeGeneratedEST = datetime_utc_to_local(TimeGenerated, timezone), Category, Resource, DestinationIp_s, Protocol_s, SourceIP, SourcePort_d, DestinationPort_d, Action_s, Policy_s, RuleCollection_s, RuleCollectionGroup_s, Rule_s, ActionReason_s // This project line is for "NetworkRule" category (omits some columns in Application Rules
 
-// Query to retrive all traffic processed by the firewall Network Rules between two dates in EST
+// Query to retrieve all traffic processed by the firewall Network Rules between two dates in EST
 // list of timezones: https://learn.microsoft.com/en-us/azure/data-explorer/kusto/query/timezone
 let timezone = "Canada/Eastern";
 let startDate = datetime('2023-06-07'); // yyyy-mm-dd
@@ -27,7 +27,7 @@ AzureDiagnostics
 | project TimeGeneratedEST = datetime_utc_to_local(TimeGenerated, timezone), Category, Resource, OperationName, DestinationIp_s, msg_s, Protocol_s, SourceIP, SourcePort_d, DestinationPort_d, Action_s, Policy_s, RuleCollectionGroup_s, RuleCollection_s, Rule_s, ActionReason_s, Fqdn_s, TargetUrl_s // This project line is for both "NetworkRule" and "ApplicationRule" category
 // | project TimeGeneratedEST = datetime_utc_to_local(TimeGenerated, timezone), Category, Resource, DestinationIp_s, Protocol_s, SourceIP, SourcePort_d, DestinationPort_d, Action_s, Policy_s, RuleCollection_s, RuleCollectionGroup_s, Rule_s, ActionReason_s // This project line is for "NetworkRule" category (omits some columns in Application Rules
 
-// Query to retrive all traffic denied by the firewall Network Rules over the past 7 days in EST
+// Query to retrieve all traffic denied by the firewall Network Rules over the past 7 days in EST
 let daysAgo = ago(7d);
 // list of timezones: https://learn.microsoft.com/en-us/azure/data-explorer/kusto/query/timezone
 let timezone = "Canada/Eastern";
@@ -43,7 +43,7 @@ and Category contains "NetworkRule" // use "ApplicationRule" for application rul
 | project TimeGeneratedEST = datetime_utc_to_local(TimeGenerated, timezone), Category, Resource, OperationName, DestinationIp_s, msg_s, Protocol_s, SourceIP, SourcePort_d, DestinationPort_d, Action_s, Policy_s, RuleCollectionGroup_s, RuleCollection_s, Rule_s, ActionReason_s, Fqdn_s, TargetUrl_s // This project line is for both "NetworkRule" and "ApplicationRule" category
 // | project TimeGeneratedEST = datetime_utc_to_local(TimeGenerated, timezone), Category, Resource, DestinationIp_s, Protocol_s, SourceIP, SourcePort_d, DestinationPort_d, Action_s, Policy_s, RuleCollection_s, RuleCollectionGroup_s, Rule_s, ActionReason_s // This project line is for "NetworkRule" category (omits some columns in Application Rules
 
-// Query to retrive all traffic allowed between two subnets by the firewall Network Rules over the past 7 days in EST
+// Query to retrieve all traffic allowed between two subnets by the firewall Network Rules over the past 7 days in EST
 let daysAgo = ago(7d);
 // list of timezones: https://learn.microsoft.com/en-us/azure/data-explorer/kusto/query/timezone
 let timezone = "Canada/Eastern";
@@ -63,7 +63,7 @@ and DestinationIp_s startswith destinationSubnet
 | project TimeGeneratedEST = datetime_utc_to_local(TimeGenerated, timezone), Category, Resource, OperationName, DestinationIp_s, msg_s, Protocol_s, SourceIP, SourcePort_d, DestinationPort_d, Action_s, Policy_s, RuleCollectionGroup_s, RuleCollection_s, Rule_s, ActionReason_s, Fqdn_s, TargetUrl_s // This project line is for both "NetworkRule" and "ApplicationRule" category
 // | project TimeGeneratedEST = datetime_utc_to_local(TimeGenerated, timezone), Category, Resource, DestinationIp_s, Protocol_s, SourceIP, SourcePort_d, DestinationPort_d, Action_s, Policy_s, RuleCollection_s, RuleCollectionGroup_s, Rule_s, ActionReason_s // This project line is for "NetworkRule" category (omits some columns in Application Rules
 
-// Query to retrive all traffic denied outbound from one subnet by the firewall over the past 30 minutes in EST
+// Query to retrieve all traffic denied outbound from one subnet by the firewall over the past 30 minutes in EST
 let timeAgo = ago(30m);
 let timezone = "Canada/Eastern";
 let allowOrdeny = "Deny";
@@ -81,3 +81,10 @@ and SourceIP startswith sourceSubnet
 // list of timezones: https://learn.microsoft.com/en-us/azure/data-explorer/kusto/query/timezone
 | project TimeGeneratedEST = datetime_utc_to_local(TimeGenerated, timezone), Category, Resource, OperationName, DestinationIp_s, msg_s, Protocol_s, SourceIP, SourcePort_d, DestinationPort_d, Action_s, Policy_s, RuleCollectionGroup_s, RuleCollection_s, Rule_s, ActionReason_s, Fqdn_s, TargetUrl_s // This project line is for both "NetworkRule" and "ApplicationRule" category
 // | project TimeGeneratedEST = datetime_utc_to_local(TimeGenerated, timezone), Category, Resource, DestinationIp_s, Protocol_s, SourceIP, SourcePort_d, DestinationPort_d, Action_s, Policy_s, RuleCollection_s, RuleCollectionGroup_s, Rule_s, ActionReason_s // This project line is for "NetworkRule" category (omits some columns in Application Rules
+
+// Query to retrieve all traffic between a start and end date
+let startTime = datetime(2023-08-11);
+let endTime = datetime(2023-08-19);
+AzureDiagnostics
+| where ResourceType == "AZUREFIREWALLS" 
+and TimeGenerated between ( startTime .. endTime )
