@@ -171,7 +171,7 @@ function Traverse-Folders {
             # Process the JSON content as needed
             # Define the file name with the year, month, day parameter and add the hour to the file
             $outputFileName = "Firewall-Log-" + $year + "-" + $month + "-" + $day + "-Hour" + $hour + ".csv"
-            Convert-JsonToCSV -inputFile $jsonContent -outputFile $outputFileName
+            Convert-JsonToCSV -inputJsonObject $jsonContent -outputFile $outputFileName
             
         }
     }
