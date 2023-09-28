@@ -69,7 +69,7 @@ foreach ($subscriptionId in $subscriptionIds) {
     # Fetch VMs with auto on and off schedule
     $virtualMachines = Search-AzGraph -Query $autoOnOffquery
     
-    # Print out collects VMs in a table
+    # Print out collected VMs in a table for console display
     $virtualmachines | Format-Table
     foreach ($vm in $virtualMachines) {
         # Check to see if VM is running and handle VMs that may need to be deallocated
