@@ -1,13 +1,8 @@
 # Input bindings are passed in via param block.
 param($Timer)
 
-Install-Module Az.ResourceGraph
-Get-Module -Name Az.ResourceGraph -ListAvailable | Select-Object Name, Version
-Import-Module Az.ResourceGraph
-Search-AzGraph -Query $query
-
 # Add the Azure Subscription Ids that this script should read and execute on
-$subscriptionids = @"
+$subscriptionIds = @"
 [
 "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
 "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
