@@ -1,0 +1,31 @@
+// Review visits over a range of days
+// This report groups unique IP addresses for each day over the start and end date specified.
+
+let timezone = "Canada/Eastern";
+let startDate = datetime('2023-10-01'); // yyyy-mm-dd
+let endDate = datetime('2023-10-18');
+AzureDiagnostics
+| extend TimeGeneratedEST = datetime_utc_to_local(TimeGenerated, timezone)
+| where host_s == 'someStorageAccount.z9.web.core.windows.net'
+and TimeGeneratedEST between(startDate .. endDate)
+// Ignore any requests coming in for Outlook autodiscover and search crawls for robots.txt
+and requestUri_s !~ "/autodiscover/autodiscover.xml" and requestUri_s !~ "/robots.txt"
+| summarize UniqueIPs=count_distinct(clientIP_s) by bin(TimeGeneratedEST, 1h)
+| project ["Unique IP Addresses"] = UniqueIPs, ["Hours Across Days"] = TimeGeneratedEST
+| render columnchart
+
+// Review visits over a range of days
+// This report groups unique IP addresses for each day over the start and end date specified.
+
+let timezone = "Canada/Eastern";
+let startDate = datetime('2023-10-01'); // yyyy-mm-dd
+let endDate = datetime('2023-10-18');
+AzureDiagnostics 
+| extend TimeGeneratedEST = datetime_utc_to_local(TimeGenerated, timezone)
+| where host_s == 'someStorageAccount.z9.web.core.windows.net'
+and TimeGeneratedEST between(startDate .. endDate)
+// Ignore any requests coming in for Outlook autodiscover and search crawls for robots.txt
+and requestUri_s !~ "/autodiscover/autodiscover.xml" and requestUri_s !~ "/robots.txt"
+| summarize UniqueIPs=count_distinct(clientIP_s) by startofday(TimeGeneratedEST)
+| project ["Unique IP Addresses"] = UniqueIPs, ["Day"] = TimeGeneratedEST
+| render columnchart
