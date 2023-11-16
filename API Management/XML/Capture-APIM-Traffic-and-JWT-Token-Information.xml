@@ -1,0 +1,62 @@
+<!--
+    IMPORTANT:
+    - Policy elements can appear only within the <inbound>, <outbound>, <backend> section elements.
+    - To apply a policy to the incoming request (before it is forwarded to the backend service), place a corresponding policy element within the <inbound> section element.
+    - To apply a policy to the outgoing response (before it is sent back to the caller), place a corresponding policy element within the <outbound> section element.
+    - To add a policy, place the cursor at the desired insertion point and select a policy from the sidebar.
+    - To remove a policy, delete the corresponding policy statement from the policy document.
+    - Position the <base> element within a section element to inherit all policies from the corresponding section element in the enclosing scope.
+    - Remove the <base> element to prevent inheriting policies from the corresponding section element in the enclosing scope.
+    - Policies are applied in the order of their appearance, from the top down.
+    - Comments within policy elements are not supported and may disappear. Place your comments between policy elements or at a higher level scope.
+-->
+<policies>
+    <inbound>
+        <base />
+        <set-header name="api-key" exists-action="append">
+            <value>{{dev-openai}}</value>
+        </set-header>
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="403" failed-validation-error-message="Forbidden" output-token-variable-name="jwt-token">
+            <openid-config url=https://login.microsoftonline.com/{{Tenant-ID}}/v2.0/.well-known/openid-configuration />
+            <issuers>
+                <issuer>https://sts.windows.net/{{Tenant-ID}}/</issuer>
+            </issuers>
+            <required-claims>
+                <claim name="roles" match="any">
+                    <value>APIM.Access</value>
+                </claim>
+            </required-claims>
+        </validate-jwt>
+        <set-variable name="request" value="@(context.Request.Body.As<JObject>(preserveContent: true))" />
+        <set-variable name="api-key" value="@(context.Request.Headers.GetValueOrDefault("api-key",""))" />
+        <set-variable name="jwttoken" value="@(context.Request.Headers.GetValueOrDefault("Authorization",""))" />
+        <log-to-eventhub logger-id="event-hub-logger">@{
+        var jwt = context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt();
+        var appId = jwt.Claims.GetValueOrDefault("appid", string.Empty);
+        var oid = jwt.Claims.GetValueOrDefault("oid", string.Empty);
+        var name = jwt.Claims.GetValueOrDefault("name", string.Empty);
+         return new JObject(
+             new JProperty("EventTime", DateTime.UtcNow.ToString()),
+             new JProperty("ServiceName", context.Deployment.ServiceName),
+             new JProperty("RequestId", context.RequestId),
+             new JProperty("RequestIp", context.Request.IpAddress),
+             new JProperty("OperationName", context.Operation.Name),
+             new JProperty("api-key", context.Variables["api-key"]),
+             new JProperty("request-body", context.Variables["request"]),
+             new JProperty("JWTToken", context.Variables["jwttoken"]),
+             new JProperty("AppId", appId),
+             new JProperty("Oid", oid),
+             new JProperty("Name", name)
+         ).ToString();
+     }</log-to-eventhub>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
