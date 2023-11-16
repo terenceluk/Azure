@@ -1,0 +1,8 @@
+// Please refer to my blog post for more details: https://terenceluk.blogspot.com/2023/11/securing-azure-openai-with-api.html
+
+ApiManagementGatewayLogs
+| where tolower(OperationId) in ('completions_create','chatcompletions_create')
+| where ResponseCode == '200'
+| extend model = tostring(parse_json(BackendResponseBody)['model'])
+| extend prompttokens = parse_json(parse_json(BackendResponseBody)['usage'])['prompt_tokens']
+| extend prompttext = substring(parse_json(parse_json(BackendResponseBody)['choices'])[0], 0, 100)
