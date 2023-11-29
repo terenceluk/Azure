@@ -1,6 +1,8 @@
 # This Python script will process continuously run to listen for events sent to an Event Hub, process each event
 # into a JSON array, send each processed event to a Data Collection Endpoint with Data Collection Rule, 
 # that will ingest the data into a Log Analytics workspace custom table
+#
+# Please see the following blog post for more information: https://terenceluk.blogspot.com/2023/11/python-script-that-will-asynchronously.html
 
 import asyncio
 import json
