@@ -14,8 +14,8 @@ from azure.identity.aio import ClientSecretCredential
 from azure.monitor.ingestion.aio import LogsIngestionClient
 
 # Define variables for Event Hub
-EVENT_HUB_CONNECTION_STR = "Endpoint=sb://contoso-apim-evhns.servicebus.windows.net/;SharedAccessKeyName=PreviewDataPolicy;SharedAccessKey=#######################;EntityPath=contoso-apim-evh"
-EVENTHUB_NAME = 'contoso-apim-evh'
+EVENT_HUB_CONNECTION_STR = "Endpoint=sb://contosoapimevhns.servicebus.windows.net/;SharedAccessKeyName=PreviewDataPolicy;SharedAccessKey=#######################;EntityPath=contosoapimevh"
+EVENTHUB_NAME = 'contosoapimevh' # Note that I experienced issues having "dashes" or "hyphens" for the event hub when creating an Eventhub trigger for function app
 CONSUMER_GROUP = "$Default"
 
 # Define variables for storage account to store checkpoint
