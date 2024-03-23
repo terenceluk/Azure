@@ -1,5 +1,11 @@
 # Script to Create an App Registration with Azure CLI that will be granted application permissions Files.Read.All and Sites.Read.All, then grant admin consent
 
+# Note that: There does not appear to be a way for Azure CLI to configure Platform configurations so you'll need to manually perform the following after the App Registration is created:
+
+# 1. Naviagate to the Authentication tab of the App Registration
+# 2. Set Allow public client flows to Yes then select Save.
+# 3. Select + Add a platform, then Mobile and desktop applications, then check https://login.microsoftonline.com/common/oauth2/nativeclient, then Configure.
+
 # Login to Azure account with Azure CLI
 az login
 
