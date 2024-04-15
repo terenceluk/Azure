@@ -2,7 +2,11 @@
 Install-Module -Name Az.Storage -Force
 Import-Module -Name Az.Storage
 
+# Interactive Login
 Connect-AzAccount
+
+# System Managed Identity (uses the IaaS VM in Azure with access to Log Analytics and Storage Account
+$vmLoginContext = Connect-AzAccount -Identity
 
 # Set the Azure Storage account details
 $storageAccountName = "stcaclogafwprod" # Storage account where the Azure Firewall Logs are being sent to
@@ -17,6 +21,18 @@ $year = "2023"
 $month = "08"
 $startDay = "01"
 $endDay = "12"
+
+<#
+# Get yesterday's date for running the export
+$yesterdayDate = (Get-Date).AddDays(-1)
+$year = $yesterdayDate.Year.ToString("D4")
+$month = $yesterdayDate.Month.ToString("D2")
+$startDay = $yesterdayDate.Day.ToString("D2")
+$endDay = $startDay
+#>
+
+# Define Directory to store logs
+$logDirectory = "C:\Firewall-Log-Exports\"
 
 # Create a storage context using the account name after authenticating with Connect-AzAccount
 $context = New-AzStorageContext -StorageAccountName $storageAccountName
@@ -74,7 +90,7 @@ Function Convert-JsonToCSV
 	# Begin parsing through RFC 8259 valid JSON to create CSV extract
 
 	# Define output CSV file name and path
-	$pathToOutputFile = $outputFile
+	$pathToOutputFile = $logDirectory + $outputFile
 
 	# Create Array
 	$Properties = @()
