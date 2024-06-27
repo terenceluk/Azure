@@ -9,7 +9,7 @@
             "subject": {
                 "type": "string"
             },
-            "type": {
+            "eventType": {
                 "type": "string"
             },
             "time": {
