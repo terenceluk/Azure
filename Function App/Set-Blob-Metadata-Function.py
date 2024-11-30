@@ -105,4 +105,4 @@ def set_blob_metadata(container_client, blob_name, metadata):
         logging.info(f"Metadata set successfully for blob '{blob_name}'.")
     except Exception as e:
         logging.error(f"Failed to set metadata: {e}")
-        raise e  # Raise the exception to
+        raise e  # Raise the exception to be caught
