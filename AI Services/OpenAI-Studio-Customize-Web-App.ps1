@@ -6,6 +6,8 @@ Lastly, uses the hash table to update the app settings in the app service.
 
 More information about the environment variables can be found here: https://github.com/microsoft/sample-app-aoai-chatGPT
 
+Detailed breakdown can be found in my blog post here: https://blog.terenceluk.com/2024/05/customizing-look-of-sample-web-app-deployed-by-azure-openai-studio.html
+
 #>
 
 # Log into Azure
