@@ -1,0 +1,52 @@
+// Please see my following blog post for more information: https://blog.terenceluk.com/2025/06/using-azure-resource-graph-explorer-to-query-storage-account-key-vault-and-azure-sql-database-networking-settings.html
+
+// List all Storage Accounts with Firewall Settings
+resources
+| where type == "microsoft.storage/storageaccounts"
+| where tolower(resourceGroup) contains "front-end"
+   or tolower(resourceGroup) contains "back-end"
+| extend firewallSettings = 
+    case(
+        properties.publicNetworkAccess == "Disabled",
+        "Disabled",
+        isempty(properties.publicNetworkAccess) or (properties.publicNetworkAccess == "Enabled" and properties.networkAcls.defaultAction == "Allow"), 
+        "Enabled for all networks",
+        "Enabled from selected virtual networks and IP addresses")
+| extend pep_review = properties.privateEndpointConnections
+| extend pep_status = iif(isempty(pep_review) or pep_review == "[]", "No", "Yes")
+| project name, location, resourceGroup, type, kind, firewallSettings, pep_status, properties.minimumTlsVersion, properties
+| order by ['firewallSettings'] asc
+
+
+// List all Key Vault with Firewall Settings
+resources
+| where type == "microsoft.keyvault/vaults"
+//| where tolower(resourceGroup) contains "front-end"
+//   or tolower(resourceGroup) contains "back-end"
+| extend firewallSettings = 
+    case(
+        properties.publicNetworkAccess == "Disabled",
+        "Disabled",
+        isempty(properties.publicNetworkAccess) or (properties.publicNetworkAccess == "Enabled" and properties.networkAcls.defaultAction == "Allow"), 
+        "Enabled for all networks",
+        "Enabled from selected virtual networks and IP addresses")
+| extend pep_review = properties.privateEndpointConnections
+| extend pep_status = iif(isempty(pep_review) or pep_review == "[]", "No", "Yes")
+| project name, location, resourceGroup, type, firewallSettings, pep_status, properties
+| order by ['firewallSettings'] asc
+
+// List all SQL Server
+with Firewall Settings
+resources
+| where type == "microsoft.sql/servers"
+| extend firewallSettings = 
+    case(
+        properties.publicNetworkAccess == "Disabled",
+        "Disabled",
+        isempty(properties.publicNetworkAccess) or (properties.publicNetworkAccess == "Enabled" and properties.networkAcls.defaultAction == "Allow"), 
+        "Enabled for all networks",
+        "Enabled from selected virtual networks and IP addresses")
+| extend pep_review = properties.privateEndpointConnections
+| extend pep_status = iif(isempty(pep_review) or pep_review == "[]", "No", "Yes")
+| project name, location, resourceGroup, type, kind, firewallSettings, pep_status, properties
+| order by ['firewallSettings'] asc
