@@ -1,3 +1,6 @@
+// More infor about these KQL queries can be found at my following blog post: 
+// https://blog.terenceluk.com/2025/07/analyzing-anomaly-scoring-mode-for-web-application-firewall-on-azure-application-gateway.html
+
 // Get All Blocks and Related Matches
 let blockedTx = AGWFirewallLogs
     | where Action == "Blocked"
