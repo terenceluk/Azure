@@ -1,0 +1,32 @@
+// Get All Blocks and Related Matches
+let blockedTx = AGWFirewallLogs
+    | where Action == "Blocked"
+    | distinct TransactionId;
+AGWFirewallLogs
+| where Action in ("Matched", "Blocked")
+| where TransactionId in (blockedTx)
+| extend ActionPriority = case(Action == "Blocked", 0, 1)  // Blocked first
+| sort by TimeGenerated desc, TransactionId asc, ActionPriority asc
+
+// Count of Blocks by Days
+AGWFirewallLogs
+| where Action == "Blocked"
+| where TimeGenerated > ago(7d)
+| summarize BlockedCount = count() by bin(TimeGenerated, 1d)
+| sort by TimeGenerated asc
+| render columnchart
+
+// Blocked by Type over 7 days
+AGWFirewallLogs
+| where Action == "Matched"
+| where TimeGenerated > ago(7d)
+| summarize MatchCount = count() by bin(TimeGenerated, 1d), RuleId
+| sort by TimeGenerated asc
+| render columnchart
+
+AGWFirewallLogs
+| where Action == "Matched"
+| where TimeGenerated > ago(7d)
+| summarize MatchCount = count() by bin(TimeGenerated, 1d), RuleId
+| sort by TimeGenerated asc
+| render barchart
