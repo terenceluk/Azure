@@ -1,0 +1,33 @@
+{
+  "TenantAConfig": {
+    "TenantId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "SubscriptionId": "sub-tenant-a-12345",
+    "ClientId": "app-registration-id-a",
+    "ClientSecret": "client-secret-for-tenant-a",
+     "DisplayName": "Company A Tenant"
+  },
+  "TenantBConfig": {
+    "TenantId": "z9y8x7w6-v5u4-3210-zyxw-vu9876543210",
+    "SubscriptionId": "sub-tenant-b-67890",
+    "ClientId": "app-registration-id-b",
+    "ClientSecret": "client-secret-for-tenant-b",
+    "DisplayName": "Company B Tenant"
+  },
+  "ZoneMappings": [
+    {
+      "ZoneName": "privatelink.blob.core.windows.net",
+      "TenantAResourceGroup": "rg-dns-core-services-a",
+      "TenantBResourceGroup": "rg-dns-core-services-b"
+    },
+    {
+      "ZoneName": "privatelink.postgres.database.azure.com",
+      "TenantAResourceGroup": "rg-dns-core-services-a",
+      "TenantBResourceGroup": "rg-dns-core-services-b"
+    },
+    {
+      "ZoneName": "privatelink.vaultcore.azure.net",
+      "TenantAResourceGroup": "rg-dns-core-services-a",
+      "TenantBResourceGroup": "rg-dns-core-services-b"
+    }
+  ]
+}
