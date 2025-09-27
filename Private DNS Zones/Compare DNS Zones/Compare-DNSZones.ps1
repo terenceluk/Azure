@@ -209,7 +209,7 @@
     Terence Luk
 
 .LINK
-    Project Repository: https://github.com/terenceluk/Azure/
+    Project Repository: https://github.com/terenceluk/Azure/tree/main/Private%20DNS%20Zones/Compare%20DNS%20Zones
     Az.Accounts Module: https://docs.microsoft.com/powershell/module/az.accounts
     Az.PrivateDns Module: https://docs.microsoft.com/powershell/module/az.privatedns
 
