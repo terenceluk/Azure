@@ -1,0 +1,20 @@
+resources
+| where type == 'microsoft.network/applicationgatewaywebapplicationfirewallpolicies'
+| project subscriptionId, resourceGroup, policyName = name,
+         exclusions = properties.managedRules.exclusions
+| mv-expand exclusions
+| extend matchVariable = tostring(exclusions.matchVariable),
+         selectorMatchOperator = tostring(exclusions.selectorMatchOperator),
+         selector = tostring(exclusions.selector),
+         ruleSets = exclusions.exclusionManagedRuleSets
+| mv-expand ruleSets
+| extend ruleSetType = tostring(ruleSets.ruleSetType),
+         ruleSetVersion = tostring(ruleSets.ruleSetVersion),
+         ruleGroups = ruleSets.ruleGroups
+| mv-expand ruleGroups
+| extend ruleGroupName = tostring(ruleGroups.ruleGroupName),
+         rules = ruleGroups.rules
+| mv-expand rules
+| extend ruleId = tostring(rules.ruleId)
+| project subscriptionId, resourceGroup, policyName, ruleSetType, ruleSetVersion, ruleId,
+          ruleGroupName, matchVariable, selectorMatchOperator, selector
