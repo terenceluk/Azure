@@ -1,0 +1,14 @@
+resources
+| where type == "microsoft.network/applicationgatewaywebapplicationfirewallpolicies"
+| project subscriptionId,
+          resourceGroup,
+          policyName = name,
+          customRules = properties.customRules
+| mv-expand customRules
+| extend ruleName = tostring(customRules.name),
+         priority = toint(customRules.priority),
+         ruleType = tostring(customRules.ruleType),
+         action   = tostring(customRules.action),
+         config   = tostring(customRules)   // Entire rule object as JSON
+| project subscriptionId, resourceGroup, policyName,
+          ruleName, priority, ruleType, action, config
