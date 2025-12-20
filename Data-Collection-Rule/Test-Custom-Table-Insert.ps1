@@ -78,7 +78,7 @@ $body = @"
 [
   {
     "TimeGenerated": "$([DateTime]::UtcNow.ToString("o"))",
-    "tenantId": "12345678-1234-1234-1234-123456789abc",
+    "aztenantId": "12345678-1234-1234-1234-123456789abc",
     "subscriptionId": "ABCDEFGH-1234-1234-1234-123456789abc",
     "resourceGroup": "dev-valora-network-rg",
     "vnetName": "dev-valora-vm-vnet",
