@@ -1,0 +1,13 @@
+[
+  {
+    "TimeGenerated": "2024-01-15T10:30:00Z",
+    "tenantId": "12345678-1234-1234-1234-123456789abc",
+    "subscriptionId": "12345678-1234-1234-1234-123456789abc",
+    "resourceGroup": "network-rg",
+    "vnetName": "hub-vnet",
+    "vnetAddressPrefixes": ["10.0.0.0/16", "192.168.0.0"],
+    "region": "eastus",
+    "subnetName": "snet-webapp-private-endpoint",
+    "addressPrefix": ["10.0.1.0/24","192.168.0.250"]
+  }
+]
