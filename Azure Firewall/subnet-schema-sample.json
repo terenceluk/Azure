@@ -5,7 +5,7 @@
     "subscriptionId": "12345678-1234-1234-1234-123456789abc",
     "resourceGroup": "network-rg",
     "vnetName": "hub-vnet",
-    "vnetAddressPrefixes": ["10.0.0.0/16", "192.168.0.0"],
+    "vnetAddressPrefixes": ["10.0.0.0/16", "192.168.0.0/24"],
     "region": "eastus",
     "subnetName": "snet-webapp-private-endpoint",
     "subnetAddressPrefixes": ["10.0.1.0/24","192.168.0.250"]
