@@ -82,9 +82,21 @@ $body = @"
     "subscriptionId": "ABCDEFGH-1234-1234-1234-123456789abc",
     "resourceGroup": "dev-valora-network-rg",
     "vnetName": "dev-valora-vm-vnet",
+    "vnetAddressPrefixes": ["10.0.0.0/16", "192.168.0.0"],
     "region": "canadacentral",
     "subnetName": "dev-valora-jumpbox-snet",
-    "addressPrefix": "10.224.20.16/28"
+    "subnetAddressPrefixes": ["10.224.20.16/28"]
+  },
+  {
+    "TimeGenerated": "$([DateTime]::UtcNow.ToString("o"))",
+    "aztenantId": "12345678-1234-1234-1234-123456789abc",
+    "subscriptionId": "ABCDEFGH-1234-1234-1234-123456789abc",
+    "resourceGroup": "dev-test-network-rg",
+    "vnetName": "dev-test-vm-vnet",
+    "vnetAddressPrefixes": ["10.0.0.0/16", "192.168.0.0/24"],
+    "region": "canadacentral",
+    "subnetName": "dev-test-jumpbox-snet",
+    "subnetAddressPrefixes": ["10.224.20.16/28"]
   }
 ]
 "@
