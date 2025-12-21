@@ -48,7 +48,7 @@ foreach ($sub in $subscriptions) {
     try {
         $roleAssignment = New-AzRoleAssignment `
             -ObjectId $objectId `
-            -RoleDefinitionName "Reader" `
+            -RoleDefinitionName "Reader" ` # Assign reader role - change if required
             -Scope "/subscriptions/$($sub.Id)" `
             -ErrorAction Stop
             
