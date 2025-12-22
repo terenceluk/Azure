@@ -1,0 +1,125 @@
+// ============================================================================  
+// CONFIGURATION SECTION - Set your time ranges here  
+// ============================================================================  
+let firewallTimeRange = 2m;  // Examples: 15m, 1h, 4h, 24h, 7d  
+let subnetTimeRange = 30d;    // Examples: 1d, 7d, 30d, 90d  
+// ============================================================================  
+// MAIN QUERY - Azure Firewall Application Rules  
+// ============================================================================  
+AZFWApplicationRule  
+| where TimeGenerated > ago(firewallTimeRange)  
+// ============================================================================  
+// FILTER EXAMPLES - UNCOMMENT AND MODIFY AS NEEDED  
+// ============================================================================  
+// === RFC1918 FILTERS ===  
+// | where ipv4_is_private(SourceIp)                      
+// | where not(ipv4_is_private(SourceIp))                 
+// === SPECIFIC SUBNET FILTERS ===  
+// | where ipv4_is_match(SourceIp, "10.0.1.0/24")         
+// === PORT FILTERS ===  
+// | where DestinationPort == 80 or DestinationPort == 443  
+// | where DestinationPort == 8080  
+// === ACTION FILTERS ===  
+// | where Action == "Deny"                               
+// | where Action == "Allow"                              
+// === PROTOCOL FILTERS ===  
+// | where Protocol == "TCP"                              
+// | where Protocol == "UDP"                              
+// | where Protocol in ("TCP", "UDP")                     
+// === DOMAIN/FQDN FILTERS ===  
+// | where Fqdn has "microsoft.com"                 
+// | where Fqdn endswith ".azure.com"               
+// | where Fqdn in ("contoso.com", "bing.com")      
+// === COMBINED FILTERS ===  
+// | where ipv4_is_private(SourceIp) and DestinationPort == 443 and Action == "Allow"  
+// | where not(ipv4_is_private(SourceIp)) and DestinationPort in (80, 443) and Action == "Deny"  
+// | where ipv4_is_match(SourceIp, "10.0.10.0/24") and Fqdn has "sql"  
+// === IP RANGE FILTERS ===  
+// | where ipv4_is_in_range(SourceIp, dynamic(["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]))  
+// === SPECIFIC EXAMPLES ===  
+// EXAMPLE 1: Find all denied outbound web traffic  
+// | where Action == "Deny" and DestinationPort in (80, 443)  
+// EXAMPLE 2: Find all allowed internal database traffic  
+// | where Action == "Allow" and DestinationPort in (1433, 3306, 5432, 27017) and ipv4_is_private(SourceIp)  
+// EXAMPLE 3: Monitor web traffic from app tier only  
+// | where ipv4_is_match(SourceIp, "10.0.10.0/24") and Fqdn has "web"  
+// ============================================================================  
+// CONTINUE WITH MAIN QUERY PROCESSING  
+// ============================================================================  
+| sort by TimeGenerated desc  
+| extend srcIp = tostring(SourceIp), fqdn = tostring(Fqdn)  
+| extend rowNum = row_number()  
+// ============================================================================  
+// SUBNET LOOKUP - Using configured subnet time range (SOURCE ONLY)  
+// ============================================================================  
+| evaluate ipv4_lookup(  
+    (  
+        SubnetMap_CL  
+        | extend MyQueryTimestamp = TimeGenerated  
+        | where MyQueryTimestamp > now() - subnetTimeRange  
+        // === OPTIONAL SUBNET FILTERS (uncomment if needed) ===  
+        // | where subscriptionId == "/subscriptions/your-sub-id-here"  
+        // | where resourceGroup == "prod-network-rg"  
+        // | where vnetName contains "prod"  
+        // | where region == "eastus"  
+        // | where subnetName contains "web" or subnetName contains "app"  
+        | extend subnetAddressPrefixes = parse_json(subnetAddressPrefixes)  
+        | mv-expand subnetAddressPrefixes  
+        | extend addressPrefix = tostring(subnetAddressPrefixes)  
+        | distinct addressPrefix, subnetName, vnetName, subscriptionId, resourceGroup, region  
+    ),  
+    srcIp, addressPrefix, return_unmatched = true  
+)  
+| extend SourceSubnetName = subnetName,  
+    SourceSubnetAddressPrefix = addressPrefix,  
+    SourceVNet = vnetName,  
+    SourceSubscription = subscriptionId,  
+    SourceResourceGroup = resourceGroup,  
+    SourceRegion = region  
+| project-away subnetName, addressPrefix, vnetName, subscriptionId, resourceGroup, region  
+// ============================================================================  
+// POST-SUBNET MATCHING FILTERS (Apply after subnet lookup)  
+// ============================================================================  
+// === FILTER BY SUBNET MATCH RESULTS ===  
+// | where SourceSubnetName == "web-subnet"  
+// | where SourceSubnetName != "No match"  
+// === FILTER BY VNET ===  
+// | where SourceVNet == "prod-vnet-eastus"  
+// | where SourceVNet != ""  
+// === FILTER BY SUBSCRIPTION/RESOURCE GROUP ===  
+// | where SourceSubscription == "<your-sub-id>"  
+// | where SourceResourceGroup == "prod-network-rg"  
+// | where SourceRegion == "eastus"  
+// === COMBINED POST-MATCH FILTERS ===  
+// EXAMPLE: Web tier to internet traffic  
+// | where SourceSubnetName contains "web" and Fqdn has_any ("com", "net")  
+// ============================================================================  
+// FINAL OUTPUT  
+// ============================================================================  
+| sort by rowNum asc  
+| project  
+    TimeGenerated,  
+    Protocol = tostring(Protocol),  
+    // Source Information  
+    SourceSubnetName = iff(isempty(SourceSubnetName), "No match", SourceSubnetName),  
+    SourceSubnetAddressPrefix = iff(isempty(SourceSubnetAddressPrefix), "", SourceSubnetAddressPrefix),  
+    SourceIP = srcIp,  
+    SourcePort = SourcePort,  
+    // Destination Information  
+    Fqdn = fqdn,  
+    DestinationPort = DestinationPort,  
+    // Firewall Rule Details  
+    Action = tostring(Action),  
+    Policy = tostring(Policy),  
+    RuleCollectionGroup = tostring(RuleCollectionGroup),  
+    RuleCollection = tostring(RuleCollection),  
+    Rule = tostring(Rule),  
+    ActionReason = tostring(ActionReason),  
+    // Subnet/VNet Details (useful for filtering/grouping)  
+    SourceVNet,  
+    SourceSubscription,  
+    SourceResourceGroup,  
+    SourceRegion,  
+    // Metadata  
+    Type = tostring(Type),  
+    _ResourceId  
