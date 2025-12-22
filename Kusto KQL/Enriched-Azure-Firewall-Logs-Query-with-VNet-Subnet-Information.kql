@@ -1,0 +1,221 @@
+// ============================================================================
+// CONFIGURATION SECTION - Set your time ranges here
+// ============================================================================
+
+// Set time range for Azure Firewall rules (respects portal time picker)
+let firewallTimeRange = 2m;  // Examples: 15m, 1h, 4h, 24h, 7d
+
+// Set time range for SubnetMap data (bypasses portal time picker)
+let subnetTimeRange = 30d;    // Examples: 1d, 7d, 30d, 90d
+
+// ============================================================================
+// MAIN QUERY - Azure Firewall Rules
+// ============================================================================
+AZFWNetworkRule
+| where TimeGenerated > ago(firewallTimeRange)
+
+// ============================================================================
+// FILTER EXAMPLES - UNCOMMENT AND MODIFY AS NEEDED
+// ============================================================================
+
+// === RFC1918 FILTERS ===
+// | where ipv4_is_private(SourceIp)                    // Source is RFC1918 private IP
+// | where not(ipv4_is_private(SourceIp))               // Source is NOT RFC1918 (public)
+// | where ipv4_is_private(DestinationIp)               // Destination is RFC1918
+// | where not(ipv4_is_private(DestinationIp))          // Destination is NOT RFC1918
+// | where ipv4_is_private(SourceIp) and not(ipv4_is_private(DestinationIp))  // Outbound to internet
+// | where not(ipv4_is_private(SourceIp)) and ipv4_is_private(DestinationIp)  // Inbound from internet
+
+// === SPECIFIC SUBNET FILTERS ===
+// | where ipv4_is_match(SourceIp, "10.0.1.0/24")       // Source in specific subnet
+// | where ipv4_is_match(DestinationIp, "192.168.1.0/24") // Destination in specific subnet
+// | where ipv4_is_match(SourceIp, "10.0.1.0/24") and ipv4_is_match(DestinationIp, "10.0.2.0/24")  // Between two subnets
+
+// === PORT FILTERS ===
+// | where SourcePort == 80 or SourcePort == 443        // Source port 80 or 443
+// | where DestinationPort == 3389                      // RDP traffic
+// | where DestinationPort == 22                        // SSH traffic
+// | where DestinationPort == 443                       // HTTPS traffic
+// | where DestinationPort in (80, 443, 8080, 8443)     // Web traffic
+// | where DestinationPort in (1433, 3306, 5432)        // Database traffic
+
+// === ACTION FILTERS ===
+// | where Action == "Deny"                             // Show only denied traffic
+// | where Action == "Allow"                            // Show only allowed traffic
+// | where Action == "Deny" and DestinationPort == 3389 // Denied RDP attempts
+
+// === PROTOCOL FILTERS ===
+// | where Protocol == "TCP"                            // TCP only
+// | where Protocol == "UDP"                            // UDP only
+// | where Protocol in ("TCP", "UDP")                   // TCP or UDP
+
+// === COMBINED FILTERS ===
+// | where ipv4_is_private(SourceIp) and DestinationPort == 443 and Action == "Allow"  // Internal HTTPS allowed
+// | where not(ipv4_is_private(SourceIp)) and DestinationPort in (22, 3389) and Action == "Deny"  // Blocked external management attempts
+// | where ipv4_is_match(SourceIp, "10.0.10.0/24") and ipv4_is_match(DestinationIp, "10.0.20.0/24") and DestinationPort == 1433  // App to SQL Server
+
+// === MULTIPLE SUBNET FILTERS ===
+// | where ipv4_is_match(SourceIp, "10.0.1.0/24") or ipv4_is_match(SourceIp, "10.0.2.0/24")  // Source in either subnet
+// | where not(ipv4_is_match(SourceIp, "10.0.100.0/24"))  // Source NOT in specific subnet
+
+// === IP RANGE FILTERS ===
+// | where ipv4_is_in_range(SourceIp, dynamic(["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]))  // Source in any RFC1918
+
+// === SPECIFIC EXAMPLES ===
+// EXAMPLE 1: Find all denied outbound web traffic
+// | where Action == "Deny" and DestinationPort in (80, 443) and not(ipv4_is_private(DestinationIp))
+
+// EXAMPLE 2: Find all allowed internal database traffic
+// | where Action == "Allow" and DestinationPort in (1433, 3306, 5432, 27017) and ipv4_is_private(SourceIp) and ipv4_is_private(DestinationIp)
+
+// EXAMPLE 3: Monitor traffic from app tier to db tier
+// | where ipv4_is_match(SourceIp, "10.0.10.0/24") and ipv4_is_match(DestinationIp, "10.0.20.0/24")
+
+// EXAMPLE 4: Find external attempts to internal management ports
+// | where not(ipv4_is_private(SourceIp)) and DestinationPort in (22, 3389, 5900, 5985, 5986)
+
+// EXAMPLE 5: Cross-VNet traffic within same subscription
+// (Filter after subnet matching in SECTION 6 below)
+
+// ============================================================================
+// CONTINUE WITH MAIN QUERY PROCESSING
+// ============================================================================
+| sort by TimeGenerated desc
+| extend srcIp = tostring(SourceIp), destIp = tostring(DestinationIp)
+| extend rowNum = row_number()
+
+// ============================================================================
+// SUBNET LOOKUP - Using configured subnet time range
+// ============================================================================
+| evaluate ipv4_lookup(
+    (
+        SubnetMap_CL
+        | extend MyQueryTimestamp = TimeGenerated
+        | where MyQueryTimestamp > now() - subnetTimeRange
+        
+        // === OPTIONAL SUBNET FILTERS (uncomment if needed) ===
+        // | where subscriptionId == "/subscriptions/your-sub-id-here"
+        // | where resourceGroup == "prod-network-rg"
+        // | where vnetName contains "prod"
+        // | where region == "eastus"
+        // | where subnetName contains "web" or subnetName contains "app"
+        
+        | extend subnetAddressPrefixes = parse_json(subnetAddressPrefixes)
+        | mv-expand subnetAddressPrefixes
+        | extend addressPrefix = tostring(subnetAddressPrefixes)
+        | distinct addressPrefix, subnetName, vnetName, subscriptionId, resourceGroup, region
+    ),
+    srcIp, addressPrefix, return_unmatched = true
+)
+
+// Rename source subnet columns
+| extend SourceSubnetName = subnetName,
+    SourceSubnetAddressPrefix = addressPrefix,
+    SourceVNet = vnetName,
+    SourceSubscription = subscriptionId,
+    SourceResourceGroup = resourceGroup,
+    SourceRegion = region
+| project-away subnetName, addressPrefix, vnetName, subscriptionId, resourceGroup, region
+
+// Destination IP lookup (same subnet data with same time range)
+| evaluate ipv4_lookup(
+    (
+        SubnetMap_CL
+        | extend MyQueryTimestamp = TimeGenerated
+        | where MyQueryTimestamp > now() - subnetTimeRange
+        | extend subnetAddressPrefixes = parse_json(subnetAddressPrefixes)
+        | mv-expand subnetAddressPrefixes
+        | extend addressPrefix = tostring(subnetAddressPrefixes)
+        | distinct addressPrefix, subnetName, vnetName, subscriptionId, resourceGroup, region
+    ),
+    destIp, addressPrefix, return_unmatched = true
+)
+
+// Rename destination subnet columns
+| extend DestinationSubnetName = subnetName,
+    DestinationSubnetAddressPrefix = addressPrefix,
+    DestinationVNet = vnetName,
+    DestinationSubscription = subscriptionId,
+    DestinationResourceGroup = resourceGroup,
+    DestinationRegion = region
+
+// ============================================================================
+// POST-SUBNET MATCHING FILTERS (Apply after subnet lookup)
+// ============================================================================
+
+// === FILTER BY SUBNET MATCH RESULTS ===
+// | where SourceSubnetName == "web-subnet"                     // Source in specific subnet
+// | where DestinationSubnetName == "No match"                  // Destination has no subnet match (internet)
+// | where SourceSubnetName != "No match" and DestinationSubnetName == "No match"  // Internal to internet
+// | where SourceSubnetName == "No match" and DestinationSubnetName != "No match"  // Internet to internal
+// | where SourceSubnetName != "No match" and DestinationSubnetName != "No match"  // Internal to internal
+
+// === FILTER BY VNET ===
+// | where SourceVNet == "prod-vnet-eastus"                     // Source in specific VNet
+// | where DestinationVNet == "prod-vnet-eastus"                // Destination in specific VNet
+// | where SourceVNet != DestinationVNet                        // Cross-VNet traffic
+// | where SourceVNet == DestinationVNet                        // Intra-VNet traffic
+
+// === FILTER BY SUBSCRIPTION/RESOURCE GROUP ===
+// | where SourceSubscription == DestinationSubscription        // Same subscription
+// | where SourceResourceGroup == "prod-network-rg"             // Specific resource group
+// | where SourceRegion == DestinationRegion                    // Same region
+// | where SourceRegion != DestinationRegion                    // Cross-region
+
+// === COMBINED POST-MATCH FILTERS ===
+// EXAMPLE 1: Web tier to internet traffic
+// | where SourceSubnetName contains "web" and DestinationSubnetName == "No match"
+
+// EXAMPLE 2: Cross-VNet traffic between regions
+// | where SourceVNet != DestinationVNet and SourceRegion != DestinationRegion
+
+// EXAMPLE 3: Database traffic from app to db tier
+// | where SourceSubnetName contains "app" and DestinationSubnetName contains "db" and DestinationPort in (1433, 3306, 5432)
+
+// EXAMPLE 4: External traffic to DMZ
+// | where SourceSubnetName == "No match" and DestinationSubnetName contains "dmz"
+
+// EXAMPLE 5: Traffic within same resource group
+// | where SourceResourceGroup == DestinationResourceGroup and SourceResourceGroup != ""
+
+// ============================================================================
+// FINAL OUTPUT
+// ============================================================================
+| sort by rowNum asc
+| project 
+    TimeGenerated,
+    Protocol = tostring(Protocol),
+    
+    // Source Information
+    SourceSubnetName = iff(isempty(SourceSubnetName), "No match", SourceSubnetName), 
+    SourceSubnetAddressPrefix = iff(isempty(SourceSubnetAddressPrefix), "", SourceSubnetAddressPrefix), 
+    SourceIP = srcIp,
+    SourcePort = SourcePort,
+    
+    // Destination Information  
+    DestinationSubnetName = iff(isempty(DestinationSubnetName), "No match", DestinationSubnetName), 
+    DestinationSubnetAddressPrefix = iff(isempty(DestinationSubnetAddressPrefix), "", DestinationSubnetAddressPrefix), 
+    DestinationIP = destIp,
+    DestinationPort = DestinationPort,
+    
+    // Firewall Rule Details
+    Action = tostring(Action),
+    Policy = tostring(Policy),
+    RuleCollectionGroup = tostring(RuleCollectionGroup),
+    RuleCollection = tostring(RuleCollection),
+    Rule = tostring(Rule),
+    ActionReason = tostring(ActionReason),
+    
+    // Subnet/VNet Details (useful for filtering/grouping)
+    SourceVNet,
+    SourceSubscription,
+    SourceResourceGroup,
+    SourceRegion,
+    DestinationVNet,
+    DestinationSubscription,
+    DestinationResourceGroup,
+    DestinationRegion,
+    
+    // Metadata
+    Type = tostring(Type),
+    _ResourceId
