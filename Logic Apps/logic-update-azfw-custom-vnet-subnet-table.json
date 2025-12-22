@@ -1,0 +1,219 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "triggers": {
+            "Recurrence": {
+                "recurrence": {
+                    "frequency": "Month",
+                    "interval": 1,
+                    "timeZone": "Eastern Standard Time"
+                },
+                "evaluatedRecurrence": {
+                    "frequency": "Month",
+                    "interval": 1,
+                    "timeZone": "Eastern Standard Time"
+                    "startTime": "2025-12-01"
+                },
+                "type": "Recurrence"
+            }
+        },
+        "actions": {
+            "HTTP_-_Query_Resource_Graph_Explorer": {
+                "runAfter": {
+                    "Initialize_variables_-_aztenantId_value": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Http",
+                "inputs": {
+                    "uri": "https://management.azure.com/providers/Microsoft.ResourceGraph/resources",
+                    "method": "POST",
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "queries": {
+                        "api-version": "2021-03-01"
+                    },
+                    "body": {
+                        "query": "Resources | where type =~ 'microsoft.network/virtualnetworks' | project subscriptionId, resourceGroup, vnetName = name, region = location, vnetAddressPrefixes = properties.addressSpace.addressPrefixes, subnets = properties.subnets | mv-expand subnet = subnets | extend subnetName = tostring(subnet.name), subnetAddressPrefixes = iff(isnotnull(subnet.properties.addressPrefixes), subnet.properties.addressPrefixes, pack_array(tostring(subnet.properties.addressPrefix))) | extend aztenantId = '@{variables('aztenantId')}' | project subscriptionId, aztenantId, resourceGroup, vnetName, vnetAddressPrefixes = tostring(vnetAddressPrefixes), region, subnetName, subnetAddressPrefixes = tostring(subnetAddressPrefixes) | order by vnetName, subnetName"
+                    },
+                    "authentication": {
+                        "type": "ManagedServiceIdentity"
+                    }
+                }
+            },
+            "Initialize_variables_-_aztenantId_value": {
+                "runAfter": {
+                    "Initialize_variables_-_DCR_Immutable_ID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "aztenantId",
+                            "type": "string",
+                            "value": "12345678-1234-1234-1234-123456789abc"
+                        }
+                    ]
+                }
+            },
+            "Parse_JSON_-_Resource_Graph_Explorer_Data": {
+                "runAfter": {
+                    "HTTP_-_Query_Resource_Graph_Explorer": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ParseJson",
+                "inputs": {
+                    "content": "@body('HTTP_-_Query_Resource_Graph_Explorer')",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "totalRecords": {
+                                "type": "integer"
+                            },
+                            "count": {
+                                "type": "integer"
+                            },
+                            "data": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "subscriptionId": {
+                                            "type": "string"
+                                        },
+                                        "aztenantId": {
+                                            "type": "string"
+                                        },
+                                        "resourceGroup": {
+                                            "type": "string"
+                                        },
+                                        "vnetName": {
+                                            "type": "string"
+                                        },
+                                        "vnetAddressPrefixes": {
+                                            "type": "string"
+                                        },
+                                        "region": {
+                                            "type": "string"
+                                        },
+                                        "subnetName": {
+                                            "type": "string"
+                                        },
+                                        "subnetAddressPrefixes": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "subscriptionId",
+                                        "aztenantId",
+                                        "resourceGroup",
+                                        "vnetName",
+                                        "vnetAddressPrefixes",
+                                        "region",
+                                        "subnetName",
+                                        "subnetAddressPrefixes"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "Initialize_variables_-_DCE_Logs_Ingestion": {
+                "runAfter": {},
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "DCE-Logs-Ingestion",
+                            "type": "string",
+                            "value": "dce-subnet-mapping-xxxx.canadacentral-1.ingest.monitor.azure.com"
+                        }
+                    ]
+                }
+            },
+            "Initialize_variables_-_DCR_Immutable_ID": {
+                "runAfter": {
+                    "Initialize_variables_-_DCE_Logs_Ingestion": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "DCR-Immutable-ID",
+                            "type": "string",
+                            "value": "dcr-0634b77cxxxxxxa92556dxxxxx9cfea"
+                        }
+                    ]
+                }
+            },
+            "HTTP_-_Insert_VNet_and_Subnet_Information": {
+                "runAfter": {
+                    "Select_-_Data_portion_from_JSON": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Http",
+                "inputs": {
+                    "uri": "https://@{variables('DCE-Logs-Ingestion')}/dataCollectionRules/@{variables('DCR-Immutable-ID')}/streams/Custom-SubnetMap_CL?api-version=2023-01-01",
+                    "method": "POST",
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "body": "@{body('Select_-_Data_portion_from_JSON')}",
+                    "authentication": {
+                        "type": "ManagedServiceIdentity",
+                        "audience": "https://monitor.azure.com"
+                    }
+                },
+                "runtimeConfiguration": {
+                    "contentTransfer": {
+                        "transferMode": "Chunked"
+                    }
+                }
+            },
+            "Select_-_Data_portion_from_JSON": {
+                "runAfter": {
+                    "Parse_JSON_-_Resource_Graph_Explorer_Data": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Select",
+                "inputs": {
+                    "from": "@body('Parse_JSON_-_Resource_Graph_Explorer_Data')?['data']",
+                    "select": {
+                        "subscriptionId": "@{item()?['subscriptionId']}",
+                        "aztenantId": "@{item()?['aztenantId']}",
+                        "resourceGroup": "@{item()?['resourceGroup']}",
+                        "vnetName": "@{item()?['vnetName']}",
+                        "vnetAddressPrefixes": "@json(item()?['vnetAddressPrefixes'])",
+                        "region": "@{item()?['region']}",
+                        "subnetName": "@{item()?['subnetName']}",
+                        "subnetAddressPrefixes": "@json(item()?['subnetAddressPrefixes'])",
+                        "TimeGenerated": "@{formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')}"
+                    }
+                }
+            }
+        },
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "type": "Object",
+                "defaultValue": {}
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "type": "Object",
+            "value": {}
+        }
+    }
+}
