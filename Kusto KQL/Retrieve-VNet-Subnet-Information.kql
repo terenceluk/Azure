@@ -1,5 +1,5 @@
 // Resource Graph Explorer query to retrieve VNet and Subnet Information
-Resources
+resources
 | where type =~ 'microsoft.network/virtualnetworks'
 | project subscriptionId, resourceGroup, vnetName = name, region = location, vnetAddressPrefixes = properties.addressSpace.addressPrefixes, subnets = properties.subnets
 | mv-expand subnet = subnets
