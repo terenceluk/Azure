@@ -1,0 +1,147 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "actions": {
+            "HTTP_Request_to_Resource_Graph": {
+                "type": "Http",
+                "inputs": {
+                    "uri": "https://management.azure.com/providers/Microsoft.ResourceGraph/resources",
+                    "method": "POST",
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "queries": {
+                        "api-version": "2021-03-01"
+                    },
+                    "body": {
+                        "query": "@triggerBody()?['query']",
+                        "subscriptions": "@triggerBody()?['subscriptions']"
+                    },
+                    "authentication": {
+                        "type": "ManagedServiceIdentity"
+                    },
+                    "retryPolicy": {
+                        "type": "fixed",
+                        "count": 2,
+                        "interval": "PT30S"
+                    }
+                },
+                "runAfter": {}
+            },
+            "Condition_Check_Status": {
+                "type": "If",
+                "expression": {
+                    "or": [
+                        {
+                            "equals": [
+                                "@outputs('HTTP_Request_to_Resource_Graph')?['statusCode']",
+                                200
+                            ]
+                        },
+                        {
+                            "equals": [
+                                "@outputs('HTTP_Request_to_Resource_Graph')?['statusCode']",
+                                201
+                            ]
+                        }
+                    ]
+                },
+                "actions": {
+                    "Success_Response": {
+                        "type": "Response",
+                        "kind": "Http",
+                        "inputs": {
+                            "statusCode": 200,
+                            "headers": {
+                                "Content-Type": "application/json",
+                                "Access-Control-Allow-Origin": "*"
+                            },
+                            "body": "@body('HTTP_Request_to_Resource_Graph')"
+                        }
+                    }
+                },
+                "else": {
+                    "actions": {
+                        "Error_Response": {
+                            "type": "Response",
+                            "kind": "Http",
+                            "inputs": {
+                                "statusCode": "@outputs('HTTP_Request_to_Resource_Graph')?['statusCode']",
+                                "headers": {
+                                    "Content-Type": "application/json",
+                                    "Access-Control-Allow-Origin": "*"
+                                },
+                                "body": "@body('HTTP_Request_to_Resource_Graph')"
+                            }
+                        }
+                    }
+                },
+                "runAfter": {
+                    "HTTP_Request_to_Resource_Graph": [
+                        "Succeeded",
+                        "Failed",
+                        "Skipped",
+                        "TimedOut"
+                    ]
+                }
+            }
+        },
+        "outputs": {},
+        "triggers": {
+            "When_an_HTTP_request_is_received": {
+                "type": "Request",
+                "description": "This tool enables a Azure Resource Graph query to be passed, processed, and returned either success or failure within the MCP server.",
+                "kind": "Http",
+                "inputs": {
+                    "method": "POST",
+                    "schema": {
+                        "type": "object",
+                        "title": "Azure Resource Graph Query",
+                        "description": "Execute KQL queries against Azure Resource Graph to discover and analyze cloud resources.",
+                        "required": [
+                            "query"
+                        ],
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "title": "KQL Query",
+                                "description": "Kusto Query Language query starting with 'Resources |'. Example: 'Resources | project name, type, location | limit 10'",
+                                "examples": [
+                                    "Resources | project name, type, location, resourceGroup | limit 5",
+                                    "Resources | where type contains 'virtualmachines' | project name, location",
+                                    "Resources | summarize resourceCount = count() by subscriptionId"
+                                ],
+                                "minLength": 10,
+                                "pattern": "^Resources\\s*\\|"
+                            },
+                            "subscriptions": {
+                                "type": "array",
+                                "title": "Subscription IDs",
+                                "description": "Optional: Limit query to specific subscriptions. Leave empty to query all accessible subscriptions.",
+                                "items": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F-]{36}$",
+                                    "description": "Azure subscription GUID"
+                                },
+                                "default": [],
+                                "examples": [
+                                    [
+                                        "12345678-1234-1234-1234-123456789012"
+                                    ]
+                                ]
+                            }
+                        },
+                        "examples": [
+                            {
+                                "query": "Resources | project name, type, location | limit 5",
+                                "subscriptions": []
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "kind": "Stateful"
+}
