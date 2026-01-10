@@ -1,0 +1,20 @@
+// Query to search for what subnet a specific IP address is in
+resources
+| where type == "microsoft.network/virtualnetworks"
+| project 
+    vnetName = name,
+    resourceGroup,
+    subscriptionId,
+    addressPrefixes = properties.addressSpace.addressPrefixes,
+    subnets = properties.subnets
+| mv-expand subnets
+| project 
+    vnetName,
+    resourceGroup,
+    subscriptionId,
+    subnetName = tostring(subnets.name),
+    subnetAddressPrefix = tostring(subnets.properties.addressPrefix),
+    ipAddressToSearch = "10.224.20.20" // Replace with your target IP
+| extend ipInSubnet = ipv4_is_in_range(ipAddressToSearch, subnetAddressPrefix)
+| where ipInSubnet == true
+| project-away ipInSubnet
