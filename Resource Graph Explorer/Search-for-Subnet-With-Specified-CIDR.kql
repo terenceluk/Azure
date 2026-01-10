@@ -1,0 +1,11 @@
+// Query to find VNet and Subnet information with exact CIDR match
+resources
+| where type == "microsoft.network/virtualnetworks"
+| mv-expand subnet = properties.subnets
+| where tostring(subnet.properties.addressPrefix) == "10.224.20.16/28" // Subnet CIDR to search
+| project
+    subscriptionId,
+    resourceGroup,
+    vnetName = name,
+    subnetName = tostring(subnet.name),
+    subnetAddressPrefix = tostring(subnet.properties.addressPrefix)
