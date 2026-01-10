@@ -1,0 +1,23 @@
+// Query that lists all Subnets in their own row (Doesn't handle subnet prefixes)
+// subnetAddressPrefixes display's subnets as such: 10.139.64.0/18
+resources 
+| where type =~ 'microsoft.network/virtualnetworks' 
+| project subscriptionId, resourceGroup, vnetName = name, vnetAddressPrefixes = properties.addressSpace.addressPrefixes, region = location, 
+    subnets = properties.subnets
+| mv-expand subnet = subnets
+| extend subnetName = tostring(subnet.name),
+    subnetAddressPrefix = tostring(coalesce(
+        subnet.properties.addressPrefix,
+        (subnet.properties.addressPrefixes)[0]
+    ))
+| project subscriptionId, resourceGroup, vnetName, vnetAddressPrefixes, 
+region, subnetName, subnetAddressPrefix
+| order by vnetName, subnetName
+
+
+
+// Query that lists all Subnets in their own row (Handles subnet prefixes)
+// subnetAddressPrefixes display's subnets as such: ["10.2.1.0/25"] so it can have more than one subnet
+resources | where type =~ 'microsoft.network/virtualnetworks' | project subscriptionId, resourceGroup, vnetName = name, region = location, vnetAddressPrefixes = properties.addressSpace.addressPrefixes, subnets = properties.subnets| mv-expand subnet = subnets| extend subnetName = tostring(subnet.name),
+// Get ALL subnet prefixes as an array    
+subnetAddressPrefixes = iff(isnotnull(subnet.properties.addressPrefixes), subnet.properties.addressPrefixes, pack_array(tostring(subnet.properties.addressPrefix)))| project subscriptionId, resourceGroup, vnetName, region, vnetAddressPrefixes = tostring(vnetAddressPrefixes), subnetName, subnetAddressPrefixes = tostring(subnetAddressPrefixes)| order by vnetName, subnetName
