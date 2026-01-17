@@ -1,13 +1,21 @@
 resources
 | where type == "microsoft.network/virtualnetworks"
 | where name =~ "<YOUR-VNET-NAME>"
+| extend vnetName = name,
+         vnetAddressSpace = properties.addressSpace.addressPrefixes
+| mv-expand subnets = properties.subnets
+| extend subnetName = tostring(subnets.name),
+         subnetPrefix = tostring(subnets.properties.addressPrefix),
+         subnetPrefixes = subnets.properties.addressPrefixes,
+         nsg = tostring(subnets.properties.networkSecurityGroup.id),
+         routeTable = tostring(subnets.properties.routeTable.id)
 | project
-    vnetName = name,
+    vnetName,
     location,
     resourceGroup,
-    subscriptionId,
-    addressSpace = properties.addressSpace.addressPrefixes,
-    dnsServers = properties.dhcpOptions.dnsServers,
-    enableDdosProtection = properties.enableDdosProtection,
-    bgpCommunities = properties.bgpCommunities,
-    provisioningState = properties.provisioningState
+    vnetAddressSpace,
+    subnetName,
+    subnetPrefix,
+    subnetPrefixes,
+    nsg,
+    routeTable
