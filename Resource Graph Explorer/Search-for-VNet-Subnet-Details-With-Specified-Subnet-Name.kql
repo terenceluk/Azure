@@ -1,0 +1,17 @@
+resources
+| where type == "microsoft.network/virtualnetworks"
+| extend vnetName = name
+| mv-expand subnets = properties.subnets
+| extend subnetName = tostring(subnets.name),
+         subnetPrefix = tostring(subnets.properties.addressPrefix),
+         subnetPrefixes = subnets.properties.addressPrefixes,
+         vnetAddressSpace = properties.addressSpace.addressPrefixes
+| where subnetName =~ "<Subnet Name>"
+| project
+    vnetName,
+    vnetAddressSpace,
+    subnetName,
+    subnetPrefix,
+    subnetPrefixes,
+    location,
+    resourceGroup
