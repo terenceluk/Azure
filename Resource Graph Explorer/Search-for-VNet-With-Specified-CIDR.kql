@@ -1,0 +1,13 @@
+resources
+| where type == "microsoft.network/virtualnetworks"
+| extend addressSpaces = properties.addressSpace.addressPrefixes
+| where addressSpaces has "<VNet address space to search>"
+| mv-expand subnet = properties.subnets
+| extend subnetPrefix = tostring(subnet.properties.addressPrefix)
+| project
+    subscriptionId,
+    resourceGroup,
+    vnetName = name,
+    vnetAddressSpaces = addressSpaces,
+    subnetName = tostring(subnet.name),
+    subnetAddressPrefix = subnetPrefix
