@@ -1,0 +1,23 @@
+resources
+| where type == "microsoft.network/virtualnetworks"
+| extend input = "<VNet Name/Subnet Name>"
+| parse input with vnetName "/" subnetName
+| where name =~ vnetName
+| mv-expand subnets = properties.subnets
+| extend sName = tostring(subnets.name)
+| where sName =~ subnetName
+| extend subnetPrefix = tostring(subnets.properties.addressPrefix),
+         subnetPrefixes = subnets.properties.addressPrefixes,
+         nsg = tostring(subnets.properties.networkSecurityGroup.id),
+         routeTable = tostring(subnets.properties.routeTable.id),
+         vnetAddressSpace = properties.addressSpace.addressPrefixes
+| project
+    vnetName = name,
+    vnetAddressSpace,
+    subnetName = sName,
+    subnetPrefix,
+    subnetPrefixes,
+    nsg,
+    routeTable,
+    location,
+    resourceGroup
