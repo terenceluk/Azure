@@ -1,0 +1,13 @@
+resources
+| where type == "microsoft.network/virtualnetworks"
+| where name =~ "<YOUR-VNET-NAME>"
+| project
+    vnetName = name,
+    location,
+    resourceGroup,
+    subscriptionId,
+    addressSpace = properties.addressSpace.addressPrefixes,
+    dnsServers = properties.dhcpOptions.dnsServers,
+    enableDdosProtection = properties.enableDdosProtection,
+    bgpCommunities = properties.bgpCommunities,
+    provisioningState = properties.provisioningState
