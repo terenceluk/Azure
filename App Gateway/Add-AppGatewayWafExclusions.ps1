@@ -1,5 +1,14 @@
 <#
 
+# Connect to Azure
+Connect-AzAccount
+
+# Confirm you are conneceted to the right subscription, with the right account
+Get-AzContext
+
+# Select a different subscription if required
+Set-AzContext -Subscription "Your-Subscription-Name-or-ID"
+
 Example Usage: 
 
 .\Add-AppGatewayWafExclusions.ps1 `
