@@ -1,3 +1,20 @@
+<#
+
+Example Usage: 
+
+.\Add-AppGatewayWafExclusions.ps1 `
+-ResourceGroupName "rg-us-eus-app-dev" `
+-PolicyName "waf-us-eus-app-dev" `
+-RuleId "942100" `
+-MatchVariable "RequestArgNames" `
+-Selector "test" `
+-Operator "Equals" `
+-RuleSetVersion 3.2 `
+-SkipLegacyWarning `
+-SkipConfirmation
+
+#>
+
 param(
     [Parameter(Mandatory=$true)]
     [string]$ResourceGroupName,
