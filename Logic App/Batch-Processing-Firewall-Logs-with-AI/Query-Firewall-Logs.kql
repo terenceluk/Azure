@@ -1,0 +1,23 @@
+let BatchSize = @{variables('BatchSize')};
+let StartTime = todatetime('@{variables('StartTimeUtc')}');
+let EndTime   = todatetime('@{variables('EndTimeUtc')}');
+let LastCount = toint('@{variables('LastAttemptCount')}');
+let LastName  = '@{variables('LastFqdn')}';
+
+let Agg =
+AZFWApplicationRule
+| where TimeGenerated >= StartTime and TimeGenerated < EndTime
+| where Action == "Deny"
+| where isnotempty(Fqdn)
+| summarize
+    AttemptCount = count(),
+    SourceIPs = make_set(SourceIp, 100),
+    DestinationPorts = make_set(DestinationPort, 100)
+  by Fqdn;
+
+Agg
+| where (AttemptCount < LastCount)
+   or (AttemptCount == LastCount and strcmp(Fqdn, LastName) > 0)
+| sort by AttemptCount desc, Fqdn asc
+| take BatchSize
+| project Fqdn, AttemptCount, SourceIPs, DestinationPorts
