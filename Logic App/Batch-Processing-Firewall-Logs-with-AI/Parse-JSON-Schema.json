@@ -1,0 +1,46 @@
+{
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "Fqdn": {
+        "type": "string"
+      },
+      "AttemptCount": {
+        "type": "integer"
+      },
+      "SourceIPs": {
+        "type": "string"
+      },
+      "DestinationPorts": {
+        "type": "string"
+      },
+      "DomainAssessment": {
+        "type": "string"
+      },
+      "RiskLevel": {
+        "type": "string"
+      },
+      "RemediationAction": {
+        "type": "string"
+      },
+      "BusinessImpact": {
+        "type": "string"
+      },
+      "InvestigationSteps": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "Fqdn",
+      "AttemptCount",
+      "SourceIPs",
+      "DestinationPorts",
+      "DomainAssessment",
+      "RiskLevel",
+      "RemediationAction",
+      "BusinessImpact",
+      "InvestigationSteps"
+    ]
+  }
+}
