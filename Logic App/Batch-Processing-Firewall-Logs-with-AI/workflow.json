@@ -1,0 +1,511 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "actions": {
+            "Until": {
+                "type": "Until",
+                "expression": "@equals(variables('HasMore'), false)",
+                "limit": {
+                    "count": 60,
+                    "timeout": "PT1H"
+                },
+                "actions": {
+                    "Condition": {
+                        "type": "If",
+                        "expression": {
+                            "and": [
+                                {
+                                    "equals": [
+                                        "@length(body('Run_query_and_list_results')?['value'])",
+                                        0
+                                    ]
+                                }
+                            ]
+                        },
+                        "actions": {
+                            "Set_variable_-_HasMore": {
+                                "type": "SetVariable",
+                                "inputs": {
+                                    "name": "HasMore",
+                                    "value": false
+                                }
+                            }
+                        },
+                        "else": {
+                            "actions": {
+                                "Compose_-_BatchRows": {
+                                    "type": "Compose",
+                                    "inputs": "@body('Run_query_and_list_results')?['value']"
+                                },
+                                "HTTP_-_EnrichAggregates": {
+                                    "type": "Http",
+                                    "inputs": {
+                                        "uri": "https://prd-openai.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2025-01-01-preview",
+                                        "method": "POST",
+                                        "headers": {
+                                            "Content-Type": "application/json",
+                                            "api-key": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                        },
+                                        "body": {
+                                            "messages": [
+                                                {
+                                                    "role": "system",
+                                                    "content": "You are an AI assistant and cybersecurity expert analyzing aggregated Azure Firewall denied traffic.\n\nYou will receive a JSON array where each object contains:\n- Fqdn\n- AttemptCount\n- SourceIPs\n- DestinationPorts\n\nFor EACH record, add:\n- DomainAssessment\n- RiskLevel (Low/Medium/High)\n- RemediationAction\n- BusinessImpact\n- InvestigationSteps\n\nRULES:\n1) Output ONLY a valid JSON array.\n2) No markdown, no code blocks, no commentary.\n3) Process ALL records provided.\n4) Preserve original fields and add the 5 new fields."
+                                                },
+                                                {
+                                                    "role": "user",
+                                                    "content": "@{string(outputs('Compose_-_BatchRows'))}"
+                                                }
+                                            ],
+                                            "temperature": 0.3,
+                                            "max_tokens": 4000
+                                        }
+                                    },
+                                    "runAfter": {
+                                        "Compose_-_BatchRows": [
+                                            "SUCCEEDED"
+                                        ]
+                                    },
+                                    "runtimeConfiguration": {
+                                        "contentTransfer": {
+                                            "transferMode": "Chunked"
+                                        }
+                                    }
+                                },
+                                "Compose_-_ExtractLLMContent": {
+                                    "type": "Compose",
+                                    "inputs": "@body('HTTP_-_EnrichAggregates')?['choices']?[0]?['message']?['content']",
+                                    "runAfter": {
+                                        "HTTP_-_EnrichAggregates": [
+                                            "SUCCEEDED"
+                                        ]
+                                    }
+                                },
+                                "Parse_JSON": {
+                                    "type": "ParseJson",
+                                    "inputs": {
+                                        "content": "@outputs('Compose_-_ExtractLLMContent')",
+                                        "schema": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "Fqdn": {
+                                                        "type": "string"
+                                                    },
+                                                    "AttemptCount": {
+                                                        "type": "integer"
+                                                    },
+                                                    "SourceIPs": {
+                                                        "type": "string"
+                                                    },
+                                                    "DestinationPorts": {
+                                                        "type": "string"
+                                                    },
+                                                    "DomainAssessment": {
+                                                        "type": "string"
+                                                    },
+                                                    "RiskLevel": {
+                                                        "type": "string"
+                                                    },
+                                                    "RemediationAction": {
+                                                        "type": "string"
+                                                    },
+                                                    "BusinessImpact": {
+                                                        "type": "string"
+                                                    },
+                                                    "InvestigationSteps": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "Fqdn",
+                                                    "AttemptCount",
+                                                    "SourceIPs",
+                                                    "DestinationPorts",
+                                                    "DomainAssessment",
+                                                    "RiskLevel",
+                                                    "RemediationAction",
+                                                    "BusinessImpact",
+                                                    "InvestigationSteps"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "runAfter": {
+                                        "Compose_-_ExtractLLMContent": [
+                                            "SUCCEEDED"
+                                        ]
+                                    }
+                                },
+                                "Set_variable_-_LastAttemptCount": {
+                                    "type": "SetVariable",
+                                    "inputs": {
+                                        "name": "LastAttemptCount",
+                                        "value": "@last(body('Run_query_and_list_results')?['value'])?['AttemptCount']"
+                                    },
+                                    "runAfter": {
+                                        "Set_variable_-_EnrichedRows": [
+                                            "SUCCEEDED"
+                                        ]
+                                    }
+                                },
+                                "Set_variable_-_LastFqdn": {
+                                    "type": "SetVariable",
+                                    "inputs": {
+                                        "name": "LastFqdn",
+                                        "value": "@last(body('Run_query_and_list_results')?['value'])?['Fqdn']"
+                                    },
+                                    "runAfter": {
+                                        "Set_variable_-_LastAttemptCount": [
+                                            "SUCCEEDED"
+                                        ]
+                                    }
+                                },
+                                "Set_variable_-_TempEnrichedRows": {
+                                    "type": "SetVariable",
+                                    "inputs": {
+                                        "name": "TempEnrichedRows",
+                                        "value": "@body('Parse_JSON')"
+                                    },
+                                    "runAfter": {
+                                        "Parse_JSON": [
+                                            "SUCCEEDED"
+                                        ]
+                                    }
+                                },
+                                "Set_variable_-_EnrichedRows": {
+                                    "type": "SetVariable",
+                                    "inputs": {
+                                        "name": "EnrichedRows",
+                                        "value": "@outputs('Compose_-_Append_full_batch_of_records_for_each_loop')"
+                                    },
+                                    "runAfter": {
+                                        "Compose_-_Append_full_batch_of_records_for_each_loop": [
+                                            "SUCCEEDED"
+                                        ]
+                                    }
+                                },
+                                "Compose_-_Append_full_batch_of_records_for_each_loop": {
+                                    "type": "Compose",
+                                    "inputs": "@union(variables('EnrichedRows'), variables('TempEnrichedRows'))",
+                                    "runAfter": {
+                                        "Set_variable_-_TempEnrichedRows": [
+                                            "SUCCEEDED"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "runAfter": {
+                            "Run_query_and_list_results": [
+                                "SUCCEEDED"
+                            ]
+                        }
+                    },
+                    "Compose_-_Compose_KQL_": {
+                        "type": "Compose",
+                        "inputs": "\nlet BatchSize = @{variables('BatchSize')};\nlet StartTime = todatetime('@{variables('StartTimeUtc')}');\nlet EndTime   = todatetime('@{variables('EndTimeUtc')}');\nlet LastCount = toint('@{variables('LastAttemptCount')}');\nlet LastName  = '@{variables('LastFqdn')}';\n\nlet Agg =\nAZFWApplicationRule\n| where TimeGenerated >= StartTime and TimeGenerated < EndTime\n| where Action == \"Deny\"\n| where isnotempty(Fqdn)\n| summarize\n    AttemptCount = count(),\n    SourceIPs = make_set(SourceIp, 100),\n    DestinationPorts = make_set(DestinationPort, 100)\n  by Fqdn;\n\nAgg\n| where (AttemptCount < LastCount)\n   or (AttemptCount == LastCount and strcmp(Fqdn, LastName) > 0)\n| sort by AttemptCount desc, Fqdn asc\n| take BatchSize\n| project Fqdn, AttemptCount, SourceIPs, DestinationPorts"
+                    },
+                    "Run_query_and_list_results": {
+                        "type": "ApiConnection",
+                        "inputs": {
+                            "host": {
+                                "connection": {
+                                    "referenceName": "azuremonitorlogs"
+                                }
+                            },
+                            "method": "post",
+                            "body": "@{outputs('Compose_-_Compose_KQL_')}",
+                            "path": "/queryData",
+                            "queries": {
+                                "subscriptions": "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxx",
+                                "resourcegroups": "prd-infra-log-rg",
+                                "resourcetype": "Log Analytics Workspace",
+                                "resourcename": "prd-infra-afwp-log",
+                                "timerange": "Set in query"
+                            }
+                        },
+                        "runAfter": {
+                            "Compose_-_Compose_KQL_": [
+                                "SUCCEEDED"
+                            ]
+                        }
+                    }
+                },
+                "runAfter": {
+                    "Initialize_variables_-_CSV-Content": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Initialize_variables_-_HasMore": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "HasMore",
+                            "type": "boolean",
+                            "value": true
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_variables_-_LastFqdn": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Initialize_variables_-_BatchSize": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "BatchSize",
+                            "type": "integer",
+                            "value": 20
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Set_variable_-_EndTimeUtc_add_5_minutes": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Initialize_variables_-_EnrichedRows": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "EnrichedRows",
+                            "type": "array"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_variables_-_HasMore": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Initialize_variables_-_HTML-Formatting": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "HTML-Formatting",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_variables_-_TempEnrichedRows": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Initialize_variables_-_CSV-Content": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "CSV-Content",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_variables_-_HTML-Formatting": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Initialize_variables_-_StartTimeUtc": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "StartTimeUtc",
+                            "type": "string",
+                            "value": "@{formatDateTime(addHours(utcNow(), -24), 'yyyy-MM-ddTHH:mm:ss.fffffffZ')}"
+                        }
+                    ]
+                },
+                "runAfter": {}
+            },
+            "Initialize_variables_-_EndTimeUtc": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "EndTimeUtc",
+                            "type": "string",
+                            "value": "@{formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ss.fffffffZ')}"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_variables_-_StartTimeUtc": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Set_variable_-_EndTimeUtc_add_5_minutes": {
+                "type": "SetVariable",
+                "inputs": {
+                    "name": "EndTimeUtc",
+                    "value": "@formatDateTime(addMinutes(utcNow(), -5), 'yyyy-MM-ddTHH:mm:ss.fffffffZ')"
+                },
+                "runAfter": {
+                    "Initialize_variables_-_EndTimeUtc": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Create_CSV_table": {
+                "type": "Table",
+                "inputs": {
+                    "from": "@variables('EnrichedRows')",
+                    "format": "CSV"
+                },
+                "runAfter": {
+                    "Until": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Create_HTML_table": {
+                "type": "Table",
+                "inputs": {
+                    "from": "@variables('EnrichedRows')",
+                    "format": "HTML"
+                },
+                "runAfter": {
+                    "Create_CSV_table": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Set_variable_-_CSV_Content": {
+                "type": "SetVariable",
+                "inputs": {
+                    "name": "CSV-Content",
+                    "value": "@body('Create_CSV_table')"
+                },
+                "runAfter": {
+                    "Set_variable_-_Format-HTML-Table": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Set_variable_-_Format-HTML-Table": {
+                "type": "SetVariable",
+                "inputs": {
+                    "name": "HTML-Formatting",
+                    "value": "@concat( '<html><head><style>body{font-family:Arial,sans-serif;margin:20px;}h1{color:#0078d4;font-size:20px;margin-bottom:15px;}.summary{background:#f8f9fa;padding:12px;margin:15px 0;border-left:4px solid #0078d4;border-radius:0 4px 4px 0;}table{width:100%;border-collapse:collapse;margin:15px 0;font-size:13px;}th{background:#0078d4;color:white;padding:8px 10px;border:1px solid #005a9e;text-align:left;font-weight:600;}td{padding:6px 10px;border:1px solid #e0e0e0;vertical-align:top;}tr:nth-child(even){background:#f9f9f9;}tr:hover{background:#f0f7ff;}.risk-low{background:#d4edda;color:#155724;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;display:inline-block;}.risk-medium{background:#fff3cd;color:#856404;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;display:inline-block;}.risk-high{background:#f8d7da;color:#721c24;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;display:inline-block;}</style></head><body><h1>Azure Firewall Report</h1><div class=“summary”><p><strong>', length(variables('EnrichedRows')), ' domains blocked</strong><br>Generated: ', formatDateTime(utcNow(), 'MMMM dd, yyyy HH:mm'), '</p></div>', replace(replace(replace(body('Create_HTML_table'), '>Low<', '><span class=“risk-low”>Low</span><'), '>Medium<', '><span class=“risk-medium”>Medium</span><'), '>High<', '><span class=“risk-high”>High</span><'), '</body></html>' )"
+                },
+                "runAfter": {
+                    "Create_HTML_table": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Initialize_variables_-_LastAttemptCount": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "LastAttemptCount",
+                            "type": "integer",
+                            "value": 2147483647
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_variables_-_BatchSize": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Initialize_variables_-_LastFqdn": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "LastFqdn",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_variables_-_LastAttemptCount": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Initialize_variables_-_TempEnrichedRows": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "TempEnrichedRows",
+                            "type": "array"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_variables_-_EnrichedRows": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Send_an_email_(V2)": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "referenceName": "office365"
+                        }
+                    },
+                    "method": "post",
+                    "body": {
+                        "To": "tluk@contoso.com",
+                        "Subject": "Azure Firewall Denied Traffic Report @{formatDateTime(utcNow(), 'yyyy-MM-dd')}",
+                        "Body": "<p class=\"editor-paragraph\">@{variables('HTML-Formatting')}</p>",
+                        "Attachments": [
+                            {
+                                "Name": "Azure-Firewall-Denied-Traffic-Report-@{formatDateTime(utcNow(), 'yyyy-MM-dd')}.csv",
+                                "ContentBytes": "@base64(variables('CSV-Content'))"
+                            }
+                        ]
+                    },
+                    "path": "/v2/Mail"
+                },
+                "runAfter": {
+                    "Set_variable_-_CSV_Content": [
+                        "SUCCEEDED"
+                    ]
+                }
+            }
+        },
+        "outputs": {},
+        "triggers": {
+            "Recurrence": {
+                "type": "Recurrence",
+                "recurrence": {
+                    "interval": 1,
+                    "frequency": "Day",
+                    "timeZone": "Eastern Standard Time",
+                    "schedule": {
+                        "hours": [
+                            9
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "kind": "Stateful"
+}
