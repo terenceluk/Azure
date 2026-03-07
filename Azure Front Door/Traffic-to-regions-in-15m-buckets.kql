@@ -1,0 +1,51 @@
+// This query analyzes AzureDiagnostics logs from the last 4 hours (or duration between in UTC timezone) to visualize request volume by inferred Canada region. 
+// It filters to records that contain an origin name (originName_s), derives a friendly Region label based on common string 
+// patterns found in the origin name (e.g., canadacentral, cc, canadaeast, ce), then counts requests in 15-minute time buckets.
+// Results are rendered as a stacked area chart to show how total volume and regional distribution change over time.
+
+
+let StartTime = datetime(2026-03-02 00:00:00);
+let EndTime   = datetime(2026-03-03 00:00:00);
+AzureDiagnostics
+| where TimeGenerated between (StartTime .. EndTime)
+//| where TimeGenerated > ago(4h)
+| where isnotempty(originName_s)
+| extend Region = case(
+    originName_s has "canadacentral" or originName_s has "cc", "Canada Central",
+    originName_s has "canadaeast"    or originName_s has "ce", "Canada East",
+    "Unknown"
+)
+| summarize Requests=count() by Region, bin(TimeGenerated, 15m)
+| render areachart with (kind=stacked)
+
+
+//let StartTime = datetime(2026-03-02 00:00:00);
+//let EndTime   = datetime(2026-03-03 00:00:00);
+AzureDiagnostics
+//| where TimeGenerated between (StartTime .. EndTime)
+| where TimeGenerated > ago(4h)
+| where isnotempty(originName_s)
+| extend Region = case(
+    originName_s has "canadacentral" or originName_s has "cc", "Canada Central",
+    originName_s has "canadaeast"    or originName_s has "ce", "Canada East",
+    "Unknown"
+)
+| summarize Requests=count() by Region, bin(TimeGenerated, 15m)
+| render areachart with (kind=stacked)
+
+
+
+
+//let StartTime = datetime(2026-03-02 00:00:00);
+//let EndTime   = datetime(2026-03-03 00:00:00);
+AzureDiagnostics
+//| where TimeGenerated between (StartTime .. EndTime)
+| where TimeGenerated > ago(5m)
+| where isnotempty(originName_s)
+| extend Region = case(
+    originName_s has "canadacentral" or originName_s has "cc", "Canada Central",
+    originName_s has "canadaeast"    or originName_s has "ce", "Canada East",
+    "Unknown"
+)
+| summarize Requests=count() by Region, bin(TimeGenerated, 15m)
+| render areachart with (kind=stacked)
