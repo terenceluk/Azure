@@ -1,0 +1,6 @@
+// Lists the total requests by origin name listed in descending order
+
+AzureDiagnostics
+| where TimeGenerated > ago(7d)
+| summarize Requests=count() by originName_s
+| order by Requests desc
