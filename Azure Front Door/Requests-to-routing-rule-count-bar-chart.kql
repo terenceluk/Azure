@@ -1,0 +1,15 @@
+// Summarizes Azure diagnostic requests from the last 24 hours by routing rule, region, and hostname.
+// Classifies traffic into Canada Central, Canada East, or Unknown based on origin name and displays results as a stacked bar chart.
+
+AzureDiagnostics
+| where TimeGenerated > ago(24h)
+| where isnotempty(originName_s)
+| where isnotempty(hostName_s)
+| extend Region = case(
+    originName_s has "canadacentral" or originName_s has "cc", "Canada Central",
+    originName_s has "canadaeast"    or originName_s has "ce", "Canada East",
+    "Unknown"
+)
+| summarize Requests = count() by routingRuleName_s, Region, hostName_s
+| order by routingRuleName_s asc
+| render barchart with (kind=stacked)
