@@ -1,0 +1,17 @@
+// Lists the total requests by Region
+// Assumption is that the origin contains the string "cc" or "ce" that indicates which App Gateway region the traffic is sent to
+
+let OriginToRegion = (origin:string) {
+    case(
+        origin has_cs "canadacentral" or origin has_cs "cc", "Canada Central",
+        origin has_cs "canadaeast"    or origin has_cs "ce", "Canada East",
+        "Unknown"
+    )
+};
+AzureDiagnostics
+| where TimeGenerated > ago(4h)
+| where isnotempty(originName_s)
+| extend Region = OriginToRegion(originName_s)
+| summarize Requests=count() by Region
+| order by Requests desc
+| render piechart
