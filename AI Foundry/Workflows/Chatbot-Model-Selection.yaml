@@ -1,0 +1,154 @@
+kind: workflow
+trigger:
+  kind: OnConversationStart
+  id: trigger_id
+  actions:
+    - kind: Question
+      id: ask_model
+      variable: Local.ModelChoice
+      prompt: |-
+        What model would you like to use?
+
+        1. GPT 5.3
+        2. GPT 4.1
+      entity: StringPrebuiltEntity
+      alwaysPrompt: false
+    - kind: ConditionGroup
+      id: set_selected_model
+      conditions:
+        - id: if_gpt53
+          condition: =Trim(Local.ModelChoice) = "1"
+          actions:
+            - kind: SetVariable
+              id: set_model_53
+              variable: Local.SelectedModel
+              value: ="gpt-5.3"
+      elseActions:
+        - kind: SetVariable
+          id: set_model_41
+          variable: Local.SelectedModel
+          value: ="gpt-4.1"
+    - kind: SendActivity
+      id: send_greeting
+      activity: |-
+        {
+          If(
+            Local.SelectedModel = "gpt-5.3",
+            "Chatbot GPT-5.3 at your service :-)",
+            "Chatbot GPT-4.1 at your service :-)"
+          )
+        }
+    - kind: SetVariable
+      id: init_first_question
+      variable: Local.IsFirstQuestion
+      value: =true
+    - kind: GotoAction
+      id: goto_ask_question
+      actionId: check_if_should_prompt
+    - kind: ConditionGroup
+      id: check_if_should_prompt
+      conditions:
+        - id: if_first_question
+          condition: =Local.IsFirstQuestion = true
+          actions:
+            - kind: SendActivity
+              id: send_initial_prompt
+              activity: Ask me anything.
+            - kind: SetVariable
+              id: clear_first_question_flag
+              variable: Local.IsFirstQuestion
+              value: =false
+            - kind: GotoAction
+              id: goto_ask_question_after_prompt
+              actionId: ask_user_question
+      elseActions:
+        - kind: GotoAction
+          id: goto_ask_question_after_continuation
+          actionId: ask_user_question
+    - kind: Question
+      id: ask_user_question
+      variable: Local.UserQuestion
+      prompt: ""
+      entity: StringPrebuiltEntity
+      alwaysPrompt: true
+    - kind: ConditionGroup
+      id: route_to_model
+      conditions:
+        - id: if_use_53
+          condition: =Local.SelectedModel = "gpt-5.3"
+          actions:
+            - kind: InvokeAzureAgent
+              id: invoke_gpt_53
+              agent:
+                name: gpt-53-chat
+              conversationId: =System.ConversationId
+              input:
+                messages: =Local.UserQuestion
+              output:
+                autoSend: true
+                messages: Local.AgentAnswer
+      elseActions:
+        - kind: InvokeAzureAgent
+          id: invoke_gpt_41
+          agent:
+            name: gpt-41
+          conversationId: =System.ConversationId
+          input:
+            messages: =Local.UserQuestion
+          output:
+            autoSend: true
+            messages: Local.AgentAnswer
+    - kind: ConditionGroup
+      id: check_agent_answer
+      conditions:
+        - id: if_answer_exists
+          condition: =CountRows(Local.AgentAnswer) > 0
+          actions:
+            - kind: SetVariable
+              id: build_suggestion_context
+              variable: Local.SuggestionContext
+              value: |-
+                ="Based on this conversation, generate 2-3 brief follow-up questions or suggestions." 
+                & Char(10) & Char(10) &
+                "User question: " & Local.UserQuestion & Char(10) &
+                "Answer given: " & Last(Local.AgentAnswer).Text & Char(10) & Char(10) &
+                "Follow-up suggestions (each on a new line starting with •):"
+            - kind: InvokeAzureAgent
+              id: invoke_suggestion_agent
+              agent:
+                name: Follow-Up-Suggestion-Agent
+              conversationId: =System.ConversationId
+              input:
+                messages: =Local.SuggestionContext
+              output:
+                autoSend: false
+                messages: Local.FollowUpSuggestions
+            - kind: ConditionGroup
+              id: check_and_format_suggestions
+              conditions:
+                - id: if_suggestions_exist
+                  condition: =CountRows(Local.FollowUpSuggestions) > 0
+                  actions:
+                    - kind: SendActivity
+                      id: send_formatted_suggestions
+                      activity: Let me know if you'd like to follow up with my suggestions.
+      elseActions:
+        - kind: SendActivity
+          id: send_error_message
+          activity: I'm sorry, I couldn't process your request. Please try again.
+    - kind: SetVariable
+      id: clear_user_question
+      variable: Local.UserQuestion
+      value: =Blank()
+    - kind: SetVariable
+      id: clear_follow_up_suggestions
+      variable: Local.FollowUpSuggestions
+      value: =Blank()
+    - kind: SendActivity
+      id: send_continuation_prompt
+      activity: I'm ready for your next question.
+    - kind: GotoAction
+      id: loop_back
+      actionId: check_if_should_prompt
+name: Chatbot-Model-Selection-v2
+description: Model selection chatbot with proper suggestions
