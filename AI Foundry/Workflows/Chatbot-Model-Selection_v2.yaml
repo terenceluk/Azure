@@ -1,0 +1,259 @@
+kind: workflow
+trigger:
+  kind: OnConversationStart
+  id: trigger_id
+  actions:
+    - kind: ConditionGroup
+      id: model_selection_loop
+      conditions:
+        - id: validate_model_choice
+          condition: =true
+          actions:
+            - kind: Question
+              id: ask_model
+              variable: Local.ModelChoice
+              prompt: |-
+                What model would you like to use?
+
+                1. Claude Opus 4.6
+                2. Claude Sonnet 4.6
+                3. DeepSeek V3.2
+                4. Llama 4 Maverick 17B
+                5. OpenAI GPT 5.3
+                6. OpenAI GPT 4.1
+              entity: StringPrebuiltEntity
+              alwaysPrompt: false
+            - kind: ConditionGroup
+              id: validate_input
+              conditions:
+                - id: if_valid_choice_1
+                  condition: =Trim(Local.ModelChoice) = "1"
+                  actions:
+                    - kind: SetVariable
+                      id: set_model_claude_opus
+                      variable: Local.SelectedModel
+                      value: ="claude-opus-4-6"
+                - id: if_valid_choice_2
+                  condition: =Trim(Local.ModelChoice) = "2"
+                  actions:
+                    - kind: SetVariable
+                      id: set_model_claude_sonnet
+                      variable: Local.SelectedModel
+                      value: ="claude-sonnet-4-6"
+                - id: if_valid_choice_3
+                  condition: =Trim(Local.ModelChoice) = "3"
+                  actions:
+                    - kind: SetVariable
+                      id: set_model_deepseek
+                      variable: Local.SelectedModel
+                      value: ="deepseek-v3-2"
+                - id: if_valid_choice_4
+                  condition: =Trim(Local.ModelChoice) = "4"
+                  actions:
+                    - kind: SetVariable
+                      id: set_model_llama
+                      variable: Local.SelectedModel
+                      value: ="Llama-4-Maverick-17B-128E-Instruct-FP8"
+                - id: if_valid_choice_5
+                  condition: =Trim(Local.ModelChoice) = "5"
+                  actions:
+                    - kind: SetVariable
+                      id: set_model_53
+                      variable: Local.SelectedModel
+                      value: ="gpt-5.3"
+                - id: if_valid_choice_6
+                  condition: =Trim(Local.ModelChoice) = "6"
+                  actions:
+                    - kind: SetVariable
+                      id: set_model_41
+                      variable: Local.SelectedModel
+                      value: ="gpt-4.1"
+              elseActions:
+                - kind: SendActivity
+                  id: send_invalid_choice
+                  activity: The option you selected is invalid.
+                - kind: GotoAction
+                  id: loop_back_to_model_selection
+                  actionId: ask_model
+    - kind: SendActivity
+      id: send_greeting
+      activity: |-
+        {
+        If(
+          Local.SelectedModel = "claude-opus-4-6", "💡 Claude Opus 4.6 at your service :-)" & Char(10) & Char(10) & "ℹ️ **Note** that I’m equipped with web search functionality to enhance results — please do not include sensitive information in your queries.",
+          Local.SelectedModel = "claude-sonnet-4-6", "Claude Sonnet 4.6 at your service :-)",
+          Local.SelectedModel = "deepseek-v3-2", "DeepSeek V3.2 at your service :-)",
+          Local.SelectedModel = "Llama-4-Maverick-17B-128E-Instruct-FP8", "Llama 4 Maverick 17B at your service :-)",
+          Local.SelectedModel = "gpt-5.3", "Chatbot OpenAI GPT-5.3 at your service :-)" & Char(10) & Char(10) & "ℹ️ **Note** that I’m equipped with web search functionality to enhance results — please do not include sensitive information in your queries.",
+          "Chatbot OpenAI GPT-4.1 at your service :-)" & Char(10) & Char(10) & "ℹ️ **Note** that I’m equipped with web search functionality to enhance results — please do not include sensitive information in your queries."
+        )
+        }
+    - kind: SetVariable
+      id: init_first_question
+      variable: Local.IsFirstQuestion
+      value: =true
+    - kind: GotoAction
+      id: goto_ask_question
+      actionId: check_if_should_prompt
+    - kind: ConditionGroup
+      id: check_if_should_prompt
+      conditions:
+        - id: if_first_question
+          condition: =Local.IsFirstQuestion = true
+          actions:
+            - kind: SendActivity
+              id: send_initial_prompt
+              activity: Ask me anything.
+            - kind: SetVariable
+              id: clear_first_question_flag
+              variable: Local.IsFirstQuestion
+              value: =false
+            - kind: GotoAction
+              id: goto_ask_question_after_prompt
+              actionId: ask_user_question
+      elseActions:
+        - kind: GotoAction
+          id: goto_ask_question_after_continuation
+          actionId: ask_user_question
+    - kind: Question
+      id: ask_user_question
+      variable: Local.UserQuestion
+      prompt: ""
+      entity: StringPrebuiltEntity
+      alwaysPrompt: true
+    - kind: ConditionGroup
+      id: route_to_model
+      conditions:
+        - id: if_use_claude_opus
+          condition: =Local.SelectedModel = "claude-opus-4-6"
+          actions:
+            - kind: InvokeAzureAgent
+              id: invoke_claude_opus
+              agent:
+                name: claude-opus-4-6
+              conversationId: =System.ConversationId
+              input:
+                messages: =Local.UserQuestion
+              output:
+                autoSend: true
+                messages: Local.AgentAnswer
+        - id: if_use_claude_sonnet
+          condition: =Local.SelectedModel = "claude-sonnet-4-6"
+          actions:
+            - kind: InvokeAzureAgent
+              id: invoke_claude_sonnet
+              agent:
+                name: claude-sonnet-4-6
+              conversationId: =System.ConversationId
+              input:
+                messages: =Local.UserQuestion
+              output:
+                autoSend: true
+                messages: Local.AgentAnswer
+        - id: if_use_deepseek
+          condition: =Local.SelectedModel = "deepseek-v3-2"
+          actions:
+            - kind: InvokeAzureAgent
+              id: invoke_deepseek
+              agent:
+                name: deepseek-v3-2
+              conversationId: =System.ConversationId
+              input:
+                messages: =Local.UserQuestion
+              output:
+                autoSend: true
+                messages: Local.AgentAnswer
+        - id: if_use_llama
+          condition: =Local.SelectedModel = "Llama-4-Maverick-17B-128E-Instruct-FP8"
+          actions:
+            - kind: InvokeAzureAgent
+              id: invoke_llama
+              agent:
+                name: Llama-4-Maverick-17B-128E-Instruct-FP8
+              conversationId: =System.ConversationId
+              input:
+                messages: =Local.UserQuestion
+              output:
+                autoSend: true
+                messages: Local.AgentAnswer
+        - id: if_use_gpt53
+          condition: =Local.SelectedModel = "gpt-5.3"
+          actions:
+            - kind: InvokeAzureAgent
+              id: invoke_gpt_53
+              agent:
+                name: gpt-53-chat
+              conversationId: =System.ConversationId
+              input:
+                messages: =Local.UserQuestion
+              output:
+                autoSend: true
+                messages: Local.AgentAnswer
+      elseActions:
+        - kind: InvokeAzureAgent
+          id: invoke_gpt_41
+          agent:
+            name: gpt-41
+          conversationId: =System.ConversationId
+          input:
+            messages: =Local.UserQuestion
+          output:
+            autoSend: true
+            messages: Local.AgentAnswer
+    - kind: ConditionGroup
+      id: check_agent_answer
+      conditions:
+        - id: if_answer_exists
+          condition: =CountRows(Local.AgentAnswer) > 0 && Not(IsBlank(Last(Local.AgentAnswer).Text))
+          actions:
+            - kind: SetVariable
+              id: build_suggestion_context
+              variable: Local.SuggestionContext
+              value: |-
+                ="Based on this conversation, generate 2-3 brief follow-up questions or suggestions." 
+                & Char(10) & Char(10) &
+                "User question: " & Local.UserQuestion & Char(10) &
+                "Answer given: " & Last(Local.AgentAnswer).Text & Char(10) & Char(10) &
+                "Follow-up suggestions (each on a new line starting with •):"
+            - kind: InvokeAzureAgent
+              id: invoke_suggestion_agent
+              agent:
+                name: Follow-Up-Suggestion-Agent
+              conversationId: =System.ConversationId
+              input:
+                messages: =Local.SuggestionContext
+              output:
+                autoSend: false
+                messages: Local.FollowUpSuggestions
+            - kind: ConditionGroup
+              id: check_and_format_suggestions
+              conditions:
+                - id: if_suggestions_exist
+                  condition: =CountRows(Local.FollowUpSuggestions) > 0
+                  actions:
+                    - kind: SendActivity
+                      id: send_formatted_suggestions
+                      activity: Let me know if you'd like to follow up with my suggestions.
+      elseActions:
+        - kind: SendActivity
+          id: send_retry_message
+          activity: Sorry but I had problems processing your question. Can you ask again?
+        - kind: GotoAction
+          id: retry_question
+          actionId: ask_user_question
+    - kind: SetVariable
+      id: clear_user_question
+      variable: Local.UserQuestion
+      value: =Blank()
+    - kind: SetVariable
+      id: clear_follow_up_suggestions
+      variable: Local.FollowUpSuggestions
+      value: =Blank()
+    - kind: SendActivity
+      id: send_continuation_prompt
+      activity: I'm ready for your next question.
+    - kind: GotoAction
+      id: loop_back
+      actionId: check_if_should_prompt
+name: Chatbot-Model-Selection-v3
+description: Model selection chatbot with proper suggestions and error handling
