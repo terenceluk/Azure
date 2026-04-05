@@ -1,0 +1,14 @@
+// App Gateway - Instance Activity Window
+// For each App Gateway instance, returns the first and last time it handled
+// a request, plus the total number of requests it processed.
+// Ordered by FirstRequestSeen so newly spun-up instances appear chronologically.
+// Useful for confirming that autoscaling brought new instances online during a
+// test and to see how long each instance remained active before scaling in.
+AGWAccessLogs
+| where TimeGenerated > ago(7d)
+| summarize 
+    FirstRequestSeen = min(TimeGenerated), 
+    LastRequestSeen = max(TimeGenerated), 
+    TotalRequestsHandled = count() 
+    by InstanceId
+| order by FirstRequestSeen asc

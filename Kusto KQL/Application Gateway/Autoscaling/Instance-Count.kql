@@ -1,0 +1,9 @@
+// App Gateway - Instance Count Over Time
+// Counts the number of distinct App Gateway instances active in each 5-minute
+// window and renders a timechart. Use this to visually identify scale-out and
+// scale-in events during a load or performance test.
+// Tip: Zoom into the test window in the timechart to see exactly when scaling
+// occurred relative to the load profile.
+AGWAccessLogs
+| summarize InstanceCount = dcount(InstanceId) by bin(TimeGenerated, 5m)
+| render timechart

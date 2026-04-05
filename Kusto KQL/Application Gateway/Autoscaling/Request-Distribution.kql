@@ -1,0 +1,18 @@
+// App Gateway - Request Distribution Across Instances
+// Shows how traffic was spread across App Gateway instances during the query
+// window. Uneven distribution may indicate that some instances scaled out late
+// or that session affinity is pinning traffic to specific instances.
+// PercentageShare helps quickly spot any outlier instances.
+let TotalRequests = toscalar(
+    AGWAccessLogs
+    | where TimeGenerated > ago(24h)
+    | count
+);
+AGWAccessLogs
+| where TimeGenerated > ago(24h)
+// Count how many requests each instance handled
+| summarize RequestCount = count() by InstanceId
+// Calculate each instance's share of total traffic
+| extend PercentageShare = round((RequestCount * 100.0 / TotalRequests), 2)
+| order by RequestCount desc
+| project InstanceId, RequestCount, PercentageShare
