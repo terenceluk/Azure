@@ -1,0 +1,19 @@
+// App Gateway - Instance Lifecycle (Active Duration)
+// For each instance, calculates how long it was actively handling requests by
+// measuring the gap between its first and last observed request.
+// ActiveDurationMinutes is a proxy for how long the instance was "alive" during
+// the test. Short-lived instances typically represent burst capacity that scaled
+// in once load subsided. Long-lived instances are the baseline pool.
+// Note: This reflects request activity, not the actual VM lifetime - instances
+// may have been running slightly before/after their first/last request.
+AGWAccessLogs
+| where TimeGenerated > ago(7d)
+| summarize
+    FirstSeen = min(TimeGenerated),
+    LastSeen  = max(TimeGenerated),
+    TotalRequests = count()
+    by InstanceId
+// Calculate how long each instance was actively serving traffic
+| extend ActiveDurationMinutes = datetime_diff('minute', LastSeen, FirstSeen)
+| order by FirstSeen asc
+| project InstanceId, FirstSeen, LastSeen, ActiveDurationMinutes, TotalRequests

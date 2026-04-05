@@ -1,0 +1,8 @@
+// App Gateway - Active Instance IDs (Last 24 Hours)
+// Lists every distinct App Gateway instance that handled at least one request
+// in the past 24 hours. Use this as a quick inventory of how many instances
+// were active, and to cross-reference instance IDs with other queries.
+AGWAccessLogs
+| where TimeGenerated > ago(24h)
+| distinct InstanceId
+| order by InstanceId asc

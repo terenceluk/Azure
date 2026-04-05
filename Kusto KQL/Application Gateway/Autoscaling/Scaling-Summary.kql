@@ -1,0 +1,23 @@
+// App Gateway - Scaling Summary Statistics
+// Computes a summary of the scaling behaviour across the query window:
+//   PeakInstanceCount  - maximum number of concurrent instances in any 5-min bucket
+//   AvgInstanceCount   - average concurrency across all buckets (baseline feel)
+//   MinInstanceCount   - floor / minimum instances (often the pre-test baseline)
+//   PeakTime           - when the peak concurrency was reached
+// Useful for a quick executive summary of how far the gateway scaled during a test.
+let InstancesPerBucket =
+    AGWAccessLogs
+    // Adjust the time window to match your test duration
+    | summarize InstanceCount = dcount(InstanceId) by bin(TimeGenerated, 5m);
+InstancesPerBucket
+| summarize
+    PeakInstanceCount = max(InstanceCount),
+    AvgInstanceCount  = round(avg(InstanceCount), 1),
+    MinInstanceCount  = min(InstanceCount)
+// Join back to find the exact timestamp of the peak
+| join kind=inner (
+    InstancesPerBucket
+    | top 1 by InstanceCount desc
+    | project PeakTime = TimeGenerated, PeakInstanceCount = InstanceCount
+) on PeakInstanceCount
+| project PeakInstanceCount, PeakTime, AvgInstanceCount, MinInstanceCount

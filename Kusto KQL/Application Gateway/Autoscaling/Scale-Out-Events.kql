@@ -1,0 +1,14 @@
+// App Gateway - Scale-Out Events Over Time
+// Detects scale-out events by finding the first time each instance was ever
+// observed in the query window, then buckets those appearances by hour.
+// NewInstancesAdded shows how many instances were provisioned in each bucket,
+// giving a histogram of when autoscaling triggered scale-out steps.
+// Tip: Correlate the spike times with your load test ramp-up profile.
+AGWAccessLogs
+| where TimeGenerated > ago(7d)
+// Find the earliest request for each instance - this is the scale-out moment
+| summarize FirstSeen = min(TimeGenerated) by InstanceId
+// Bucket scale-out events into 1-hour windows (adjust as needed)
+| summarize NewInstancesAdded = count() by ScaleOutBucket = bin(FirstSeen, 1h)
+| order by ScaleOutBucket asc
+| render timechart
